@@ -1,0 +1,158 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #0095dd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+}
+
+p {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+h1 {
+  font-size: 45px;
+  color: #fff;
+}
+
+h2 {
+  margin-top: 15px;
+  margin-bottom: 5px;
+}
+
+canvas {
+  background: #f0f0f0;
+  display: block;
+}
+
+.btn {
+  cursor: pointer;
+  border: 0;
+  padding: 10px 20px;
+  background: #000;
+  color: #fff;
+  border-radius: 5px;
+}
+
+.btn:focus {
+  outline: 0;
+}
+
+.btn:hover {
+  background: #222;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.rules-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+.score-btn {
+  width: 160px;
+}
+
+.rules {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #004161;
+  color: #fff;
+  min-height: 100vh;
+  width: 400px;
+  padding: 20px;
+  line-height: 1.5;
+  transform: translateX(-400px);
+  transition: transform 1s ease-in-out;
+}
+
+.rules.show {
+  transform: translateX(0);
+}
+
+.row-container {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.img-ctrl {
+  width: 120px;
+}
+
+.control-label {
+  margin-top: 0px;
+}
+
+.selectable {
+  border: 4px solid transparent;
+}
+
+.selectable:not(.selected):hover {
+  border: 4px solid#006393;
+}
+
+.selected {
+  border: 4px solid#0095dd;
+  background: #006393;
+}
+
+.yellow-square {
+  width: 10px;
+  height: 10px;
+  background: #ffcc00;
+}
+
+.orange-square {
+  width: 10px;
+  height: 10px;
+  background: #ff9900;
+}
+
+.red-square {
+  width: 10px;
+  height: 10px;
+  background: #ff3300;
+}
+
+.magic-square {
+  width: 10px;
+  height: 10px;
+  background: #660066;
+}
+
+.food-table {
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+.food-table-col-left {
+  margin-left: 15px;
+  margin-right: 10px;
+}
+
+.food-table-col-left > * {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 25px;
+}
+
+.food-table-col-right > * {
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  height: 25px;
+}
