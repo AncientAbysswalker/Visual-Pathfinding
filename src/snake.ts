@@ -17,6 +17,26 @@ const mapBtns = [map0Btn, map1Btn, map2Btn];
 const spBtn = document.getElementById("sp-img")! as HTMLImageElement;
 const mpBtn = document.getElementById("mp-img")! as HTMLImageElement;
 
+// New Search Button
+const newSearchBtn = document.getElementById(
+  "new-search-btn"
+)! as HTMLButtonElement;
+
+// Run Search Button
+const runSearchBtn = document.getElementById(
+  "run-search-btn"
+)! as HTMLButtonElement;
+
+// Tooltip Buttons
+const ttStartBtn = document.getElementById(
+  "tt-start-btn"
+)! as HTMLButtonElement;
+const ttFinishBtn = document.getElementById(
+  "tt-finish-btn"
+)! as HTMLButtonElement;
+
+const error = document.getElementById("error")! as HTMLElement;
+
 // Reset Scores Button Elements
 const resetSPBtn = document.getElementById(
   "reset-sp-score-btn"
@@ -86,14 +106,12 @@ interface Dimensioned {
 interface Point extends Dimensioned {}
 interface Vector extends Dimensioned {}
 
-// let re = new Point(1, 6);
-// console.log(re.toString());
-
 // Convert a pair of numbers into a point object
 function toPoint(x: number, y: number): Point {
   return { x: x, y: y };
 }
 
+// Convert a stringified point into a point object
 function stringToPoint(str: string): Point {
   return {
     x: +str.substring(str.lastIndexOf("x:") + 2, str.lastIndexOf(",")),
@@ -101,12 +119,20 @@ function stringToPoint(str: string): Point {
   };
 }
 
+// Convert a point object into a string
 function ptToString(p: Point) {
   return `{x: ${p.x}, y: ${p.y}}`;
 }
 
 function movePoint(p1: Dimensioned, p2: Dimensioned): Dimensioned {
   return { x: p1.x + p2.x, y: p1.y + p2.y };
+}
+
+function samePoint(p1: Point, p2: Point) {
+  if (!p1 || !p2) {
+    return false;
+  }
+  return p1.x === p2.x && p1.y === p2.y;
 }
 
 function myIndexOf(arr, o) {
@@ -118,69 +144,108 @@ function myIndexOf(arr, o) {
   return -1;
 }
 
-class WeightedGraph {
+enum Tooltip {
+  ERASE,
+  BLOCK,
+  START,
+  FINISH,
+}
+
+class GameMap {
   adjacencyList: { [key: string]: Point[] };
   grid: GridObjects[][];
   traversed: Point[] = [];
   final_path: Point[] = [];
-  static current: WeightedGraph;
+  static current: GameMap;
+  static id = 0;
+  id: number;
+
+  static tile_size = 16;
 
   cycle_step = 0;
   current_search;
   is_complete = false;
   start_search = false;
 
+  static tooltip = Tooltip.BLOCK;
+  pt_start: Point = undefined;
+  pt_finish: Point = undefined;
+
   static newSearch() {
-    if (!WeightedGraph.current) {
-      WeightedGraph.current = new WeightedGraph();
-      WeightedGraph.current.update();
+    console.log("new_S");
+    if (!GameMap.current) {
+      GameMap.current = new GameMap();
+      GameMap.update();
     } else {
-      WeightedGraph.current = new WeightedGraph();
-      //WeightedGraph.resetGameSpeed();
+      GameMap.current = new GameMap();
     }
   }
 
   private constructor() {
-    this.adjacencyList = WeightedGraph.genAdjacency();
-    this.grid = WeightedGraph.genGrid();
+    this.genAdjacency(); //this.adjacencyList =
+    this.genGrid(); //this.grid =
+    GameMap.id++;
+    this.id = GameMap.id;
+
+    //UNNEEDED??
+    this.traversed = [];
+    this.final_path = [];
+    this.cycle_step = 0;
+    this.current_search;
+    this.is_complete = false;
+    this.start_search = false;
+    this.pt_start = { x: 0, y: 0 };
+    this.pt_finish = { x: 5, y: 5 };
+  }
+
+  runSearch() {
+    if (this.pt_start && this.pt_finish) {
+      this.start_search = true;
+      this.searchDijkstra();
+    } else {
+      error.innerText = "MISSING POINTS";
+    }
   }
 
   searchDijkstra() {
-    this.current_search = new Dijkstra("{x: 0, y: 0}", "{x: 5, y: 5}");
+    this.current_search = new Dijkstra(
+      ptToString(this.pt_start),
+      ptToString(this.pt_finish)
+    );
     this.cycle_step = 0;
   }
 
-  static genGrid(): GridObjects[][] {
-    let grid = [];
+  genGrid() {
+    this.grid = [];
     for (let i = 0; i < 8; i++) {
-      grid[i] = [];
+      this.grid[i] = [];
       for (let j = 0; j < 8; j++) {
-        grid[i][j] = null;
+        this.grid[i][j] = null;
       }
     }
-    return grid;
+    //return grid;
   }
 
-  static genAdjacency() {
-    let adjacencyList: { [key: string]: Point[] } = {};
+  genAdjacency() {
+    this.adjacencyList = {};
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
-        adjacencyList[ptToString(toPoint(i, j))] = [];
+        this.adjacencyList[ptToString(toPoint(i, j))] = [];
         if (i > 0) {
-          adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i - 1, j));
+          this.adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i - 1, j));
         }
         if (j > 0) {
-          adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i, j - 1));
+          this.adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i, j - 1));
         }
         if (i < 8 - 1) {
-          adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i + 1, j));
+          this.adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i + 1, j));
         }
         if (j < 8 - 1) {
-          adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i, j + 1));
+          this.adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i, j + 1));
         }
       }
     }
-    return adjacencyList;
+    //return adjacencyList;
   }
 
   closePoint(p: Point) {
@@ -212,126 +277,103 @@ class WeightedGraph {
     }
   }
 
-  update() {
-    WeightedGraph.current.drawGameGrid();
+  static update() {
+    GameMap.current.draw();
 
-    if (!this.is_complete && this.start_search) {
-      this.cycle_step++;
-      console.log(this.cycle_step);
-      if (this.cycle_step % 10 === 0) {
-        this.is_complete = this.current_search?.takeStep();
-        this.cycle_step = 0;
+    requestAnimationFrame(update);
+  }
+
+  // Draw
+  draw() {
+    // clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    GameMap.current.drawGrid();
+    let gmc = GameMap.current;
+    if (!gmc.is_complete && gmc.start_search) {
+      gmc.cycle_step++;
+      if (gmc.cycle_step % 10 === 0) {
+        gmc.is_complete = gmc.current_search?.takeStep();
+        gmc.cycle_step = 0;
+        console.log("step");
       }
     }
-    WeightedGraph.current.drawSearch();
+    GameMap.current.drawSearch();
 
-    if (this.is_complete) {
-      WeightedGraph.current.drawPath();
+    if (GameMap.current.is_complete) {
+      GameMap.current.drawPath();
     }
-
-    // if (Game.current.isGameOver()) {
-    //   Game.current.runGameOver();
-    // }
-
-    // Loop update with a timeout
-    requestAnimationFrame(this.update.bind(this));
-    //setTimeout(() => requestAnimationFrame(update), 1);
   }
 
   // Draw game_grid on canvas
-  drawGameGrid() {
+  drawGrid() {
+    console.log("grid", this.id);
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
         let obj = this.grid[i][j];
         if (obj !== null) {
-          drawPixel(toPoint(i, j), "#000");
+          drawTile(toPoint(i, j), "#B6FDFF");
+        } else if (samePoint(toPoint(i, j), this.pt_start)) {
+          drawTile(toPoint(i, j), "#f00");
+        } else if (samePoint(toPoint(i, j), this.pt_finish)) {
+          drawTile(toPoint(i, j), "#0f0");
         }
       }
     }
   }
 
   drawSearch() {
+    console.log("search", this.id);
     for (let p of this.traversed) {
-      drawPixel(p, "#ff0");
-      //console.log(p.x);
+      drawTile(p, "#ff0");
     }
   }
 
   drawPath() {
     for (let p of this.final_path) {
-      drawPixel(p, "#f00");
-      //console.log(p.x);
+      drawTile(p, "#f00");
     }
   }
+}
 
-  // addVertex(vertex) {
-  //   if (!this.adjacencyList[vertex]) this.adjacencyList[vertex] = [];
+// Run rendering updates
+function update() {
+  // console.log(GameMap.current.id);
+  // GameMap.current.drawGrid();
+  // let gmc = GameMap.current;
+  // if (!gmc.is_complete && gmc.start_search) {
+  //   gmc.cycle_step++;
+  //   if (gmc.cycle_step % 10 === 0) {
+  //     gmc.is_complete = gmc.current_search?.takeStep();
+  //     gmc.cycle_step = 0;
+  //     console.log("step");
+  //   }
   // }
-  // addEdge(vertex1, vertex2, weight) {
-  //   this.adjacencyList[vertex1].push({ node: vertex2, weight });
-  //   this.adjacencyList[vertex2].push({ node: vertex1, weight });
+  // GameMap.current.drawSearch();
+
+  // if (GameMap.current.is_complete) {
+  //   GameMap.current.drawPath();
   // }
-  Dijkstra(start, finish) {
-    const nodes = new PriorityQueue();
-    const distances = {};
-    const previous = {};
-    let path = []; //to return at end
-    let smallest;
-    //build up initial state
-    for (let vertex in this.adjacencyList) {
-      if (vertex === start) {
-        distances[vertex] = 0;
-        nodes.enqueue(vertex, 0);
-      } else {
-        distances[vertex] = Infinity;
-        nodes.enqueue(vertex, Infinity);
-      }
-      previous[vertex] = null;
-    }
-    // as long as there is something to visit
-    while (nodes.values.length) {
-      smallest = nodes.dequeue().val;
-      this.traversed.push(stringToPoint(smallest));
-      if (smallest === finish) {
-        //WE ARE DONE
-        //BUILD UP PATH TO RETURN AT END
-        while (previous[smallest]) {
-          path.push(stringToPoint(smallest));
-          smallest = previous[smallest];
-        }
-        break;
-      }
-      if (smallest || distances[smallest] !== Infinity) {
-        for (let neighbor in this.adjacencyList[smallest]) {
-          //find neighboring node
-          let nextNode = this.adjacencyList[smallest][neighbor];
-          //calculate new distance to neighboring node
-          let candidate = distances[smallest] + 1; //nextNode.weight;
-          let nextNeighbor = nextNode;
-          if (candidate < distances[ptToString(nextNeighbor)]) {
-            //updating new smallest distance to neighbor
-            distances[ptToString(nextNeighbor)] = candidate;
-            //updating previous - How we got to neighbor
-            previous[ptToString(nextNeighbor)] = smallest;
-            //enqueue in priority queue with new priority
-            nodes.enqueue(ptToString(nextNeighbor), candidate);
-          }
-        }
-      }
-    }
-    this.final_path = path.concat(stringToPoint(smallest)).reverse();
-    return path.concat(stringToPoint(smallest)).reverse();
-  }
+  GameMap.current.draw();
+
+  // if (Game.current.isGameOver()) {
+  //   Game.current.runGameOver();
+  // }
+
+  // Loop update at 60fps
+  requestAnimationFrame(update);
 }
 
 class Dijkstra {
   nodes: PriorityQueue;
   distances: { [key: string]: number } = {};
   previous: { [key: string]: null | string } = {};
-  path: Point[] = []; //to return at end
-  smallest = null;
+
   start: string;
   finish: string;
+  smallest = null;
+
+  path: Point[] = []; // Path to return
 
   constructor(start: string, finish: string) {
     this.nodes = new PriorityQueue();
@@ -339,7 +381,7 @@ class Dijkstra {
     this.finish = finish;
 
     //build up initial state
-    for (let vertex in WeightedGraph.current.adjacencyList) {
+    for (let vertex in GameMap.current.adjacencyList) {
       if (vertex === start) {
         this.distances[vertex] = 0;
         this.nodes.enqueue(vertex, 0);
@@ -355,7 +397,7 @@ class Dijkstra {
     // as long as there is something to visit
     if (this.nodes.values.length) {
       this.smallest = this.nodes.dequeue().val;
-      WeightedGraph.current.traversed.push(stringToPoint(this.smallest));
+      GameMap.current.traversed.push(stringToPoint(this.smallest));
       if (this.smallest === this.finish) {
         //WE ARE DONE
         //BUILD UP PATH TO RETURN AT END
@@ -364,18 +406,15 @@ class Dijkstra {
           this.smallest = this.previous[this.smallest];
         }
         //break;
-        WeightedGraph.current.final_path = this.path
+        GameMap.current.final_path = this.path
           .concat(stringToPoint(this.smallest))
           .reverse();
         return true;
       }
       if (this.smallest || this.distances[this.smallest] !== Infinity) {
-        for (let neighbor in WeightedGraph.current.adjacencyList[
-          this.smallest
-        ]) {
+        for (let neighbor in GameMap.current.adjacencyList[this.smallest]) {
           //find neighboring node
-          let nextNode =
-            WeightedGraph.current.adjacencyList[this.smallest][neighbor];
+          let nextNode = GameMap.current.adjacencyList[this.smallest][neighbor];
           //calculate new distance to neighboring node
           let candidate = this.distances[this.smallest] + 1; //nextNode.weight;
           let nextNeighbor = nextNode;
@@ -391,7 +430,7 @@ class Dijkstra {
       }
       return false;
     } else {
-      WeightedGraph.current.final_path = this.path
+      GameMap.current.final_path = this.path
         .concat(stringToPoint(this.smallest))
         .reverse();
       return true;
@@ -406,7 +445,6 @@ class PriorityQueue {
     this.values = [];
   }
   enqueue(val: string, priority: number) {
-    //console.log("rrrr", val);
     let newNode = new prioNode(val, priority);
     this.values.push(newNode);
     this.bubbleUp();
@@ -480,7 +518,7 @@ class prioNode {
 //   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 //   this.drawScore();
-//   this.drawGameGrid();
+//   this.drawGrid();
 // }
 
 // Draw score on canvas
@@ -537,20 +575,24 @@ class prioNode {
 //   }
 // }
 
-function drawPixel(p: Point, color: string) {
+function drawTile(p: Point, color: string) {
   ctx.beginPath();
-  ctx.rect(10 * p.x, 10 * p.y, 10, 10);
+  ctx.rect(
+    GameMap.tile_size * p.x,
+    GameMap.tile_size * p.y,
+    GameMap.tile_size,
+    GameMap.tile_size
+  );
   ctx.fillStyle = color;
   ctx.fill();
   ctx.closePath();
 }
 
-WeightedGraph.newSearch();
-WeightedGraph.current.searchDijkstra();
-WeightedGraph.current.closePoint({ x: 1, y: 0 });
-WeightedGraph.current.closePoint({ x: 1, y: 1 });
-WeightedGraph.current.closePoint({ x: 0, y: 3 });
-//console.log(WeightedGraph.current.Dijkstra("{x: 0, y: 0}", "{x: 5, y: 5}"));
+GameMap.newSearch();
+//GameMap.current.searchDijkstra();
+GameMap.current.closePoint({ x: 1, y: 0 });
+GameMap.current.closePoint({ x: 1, y: 1 });
+GameMap.current.closePoint({ x: 0, y: 3 });
 
 function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
   var rect = canvas.getBoundingClientRect();
@@ -560,10 +602,6 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
     y: evt.clientY - rect.top,
   };
 }
-
-//console.log(stringToPoint("{x: 6, y:4}"));
-
-//console.log(grid[5][5]);
 
 // // Crown :)
 // let crown = new Image();
@@ -874,7 +912,7 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 //   //   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 //   //   this.drawScore();
-//   //   this.drawGameGrid();
+//   //   this.drawGrid();
 //   // }
 
 //   // // Draw score on canvas
@@ -931,7 +969,7 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 //   //   }
 //   // }
 
-//   // static drawPixel(p: Point, color: string) {
+//   // static drawTile(p: Point, color: string) {
 //   //   ctx.beginPath();
 //   //   ctx.rect(
 //   //     Game.pixel_size * p.x,
@@ -945,17 +983,17 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 //   // }
 
 //   // // Draw game_grid on canvas
-//   // drawGameGrid() {
+//   // drawGrid() {
 //   //   for (let i = 0; i < Game.cols; i++) {
 //   //     for (let j = 0; j < Game.rows; j++) {
 //   //       let obj = this.getObject(toPoint(i, j));
 //   //       if (obj !== null) {
 //   //         if (obj instanceof SnakeSegment) {
-//   //           Game.drawPixel(toPoint(i, j), Snake.color[obj.id]);
+//   //           Game.drawTile(toPoint(i, j), Snake.color[obj.id]);
 //   //         } else if (obj instanceof FoodPellet) {
-//   //           Game.drawPixel(toPoint(i, j), FoodPellet.color[obj.value]);
+//   //           Game.drawTile(toPoint(i, j), FoodPellet.color[obj.value]);
 //   //         } else if (obj instanceof Wall) {
-//   //           Game.drawPixel(toPoint(i, j), Colors.BLUE);
+//   //           Game.drawTile(toPoint(i, j), Colors.BLUE);
 //   //         }
 //   //       }
 //   //     }
@@ -1257,23 +1295,21 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 // //   memSaveGameMode();
 // // });
 
-// Rules and close event handlers
-rulesBtn.addEventListener("click", () => {
-  // rules.classList.add("show");
-  // Game.paused = true;
-  WeightedGraph.current.start_search = true;
-});
-// // closeBtn.addEventListener("click", () => {
-// //   rules.classList.remove("show");
-// //   Game.paused = false;
-// // });
-
 canvas.addEventListener("mousemove", (e) => {
   if (e.buttons == 1 || e.buttons == 3) {
-    let p = getMousePos(canvas, e);
-    WeightedGraph.current.closePoint(
-      toPoint(Math.floor(p.x / 10), Math.floor(p.y / 10))
+    let pos = getMousePos(canvas, e);
+    let p = toPoint(
+      Math.floor(pos.x / GameMap.tile_size),
+      Math.floor(pos.y / GameMap.tile_size)
     );
+
+    if (GameMap.tooltip === Tooltip.BLOCK) GameMap.current.closePoint(p);
+    if (GameMap.tooltip === Tooltip.START) {
+      GameMap.current.pt_start = p;
+    }
+    if (GameMap.tooltip === Tooltip.FINISH) {
+      GameMap.current.pt_finish = p;
+    }
   }
 });
 
@@ -1284,3 +1320,20 @@ canvas.addEventListener("mousemove", (e) => {
 // // resetMPBtn.addEventListener("click", () => {
 // //   memResetMPWins();
 // // });
+
+// Tooltip Buttons
+ttStartBtn.addEventListener("click", () => {
+  GameMap.tooltip = Tooltip.START;
+});
+ttFinishBtn.addEventListener("click", () => {
+  GameMap.tooltip = Tooltip.FINISH;
+});
+
+// Run Search Button
+newSearchBtn.addEventListener("click", () => {
+  GameMap.newSearch();
+});
+// Run Search Button
+runSearchBtn.addEventListener("click", () => {
+  GameMap.current.runSearch();
+});
