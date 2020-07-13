@@ -1134,4 +1134,4 @@ newSearchBtn.addEventListener("click", () => {
 runSearchBtn.addEventListener("click", () => {
     GameMap.current.runSearch();
 });
-//# sourceMappingURL=snake.js.map
+//# sourceMappingURL=pathfinding.js.map
