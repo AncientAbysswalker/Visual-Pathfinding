@@ -27,6 +27,11 @@ const runSearchBtn = document.getElementById(
   "run-search-btn"
 )! as HTMLButtonElement;
 
+// Clear Search Button
+const clearSearchBtn = document.getElementById(
+  "clear-search-btn"
+)! as HTMLButtonElement;
+
 // Tooltip Buttons
 const ttStartBtn = document.getElementById(
   "tt-start-btn"
@@ -200,11 +205,27 @@ class GameMap {
 
   runSearch() {
     if (this.pt_start && this.pt_finish) {
+      // Reset drawn path
+      this.clearSearch();
+
+      // Start Search
+      this.cycle_step = 0;
       this.start_search = true;
+
       this.searchDijkstra();
     } else {
       error.innerText = "MISSING POINTS";
     }
+  }
+
+  clearSearch() {
+    // Reset pathfinding
+    this.traversed = [];
+    this.final_path = [];
+    this.is_complete = false;
+
+    // Stop searching
+    this.start_search = false;
   }
 
   searchDijkstra() {
@@ -280,7 +301,7 @@ class GameMap {
   static update() {
     GameMap.current.draw();
 
-    requestAnimationFrame(update);
+    requestAnimationFrame(GameMap.update);
   }
 
   // Draw
@@ -288,20 +309,18 @@ class GameMap {
     // clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    GameMap.current.drawGrid();
-    let gmc = GameMap.current;
-    if (!gmc.is_complete && gmc.start_search) {
-      gmc.cycle_step++;
-      if (gmc.cycle_step % 10 === 0) {
-        gmc.is_complete = gmc.current_search?.takeStep();
-        gmc.cycle_step = 0;
-        console.log("step");
+    this.drawGrid();
+    if (!this.is_complete && this.start_search) {
+      this.cycle_step++;
+      if (this.cycle_step % 10 === 0) {
+        this.is_complete = this.current_search?.takeStep();
+        this.cycle_step = 0;
       }
     }
-    GameMap.current.drawSearch();
+    this.drawSearch();
 
-    if (GameMap.current.is_complete) {
-      GameMap.current.drawPath();
+    if (this.is_complete) {
+      this.drawPath();
     }
   }
 
@@ -334,34 +353,6 @@ class GameMap {
       drawTile(p, "#f00");
     }
   }
-}
-
-// Run rendering updates
-function update() {
-  // console.log(GameMap.current.id);
-  // GameMap.current.drawGrid();
-  // let gmc = GameMap.current;
-  // if (!gmc.is_complete && gmc.start_search) {
-  //   gmc.cycle_step++;
-  //   if (gmc.cycle_step % 10 === 0) {
-  //     gmc.is_complete = gmc.current_search?.takeStep();
-  //     gmc.cycle_step = 0;
-  //     console.log("step");
-  //   }
-  // }
-  // GameMap.current.drawSearch();
-
-  // if (GameMap.current.is_complete) {
-  //   GameMap.current.drawPath();
-  // }
-  GameMap.current.draw();
-
-  // if (Game.current.isGameOver()) {
-  //   Game.current.runGameOver();
-  // }
-
-  // Loop update at 60fps
-  requestAnimationFrame(update);
 }
 
 class Dijkstra {
@@ -1329,11 +1320,15 @@ ttFinishBtn.addEventListener("click", () => {
   GameMap.tooltip = Tooltip.FINISH;
 });
 
-// Run Search Button
+// New Search Button
 newSearchBtn.addEventListener("click", () => {
   GameMap.newSearch();
 });
 // Run Search Button
 runSearchBtn.addEventListener("click", () => {
   GameMap.current.runSearch();
+});
+// Clear Search Button
+clearSearchBtn.addEventListener("click", () => {
+  GameMap.current.clearSearch();
 });

@@ -17,6 +17,8 @@ const mpBtn = document.getElementById("mp-img");
 const newSearchBtn = document.getElementById("new-search-btn");
 // Run Search Button
 const runSearchBtn = document.getElementById("run-search-btn");
+// Clear Search Button
+const clearSearchBtn = document.getElementById("clear-search-btn");
 // Tooltip Buttons
 const ttStartBtn = document.getElementById("tt-start-btn");
 const ttFinishBtn = document.getElementById("tt-finish-btn");
@@ -144,12 +146,24 @@ let GameMap = /** @class */ (() => {
         }
         runSearch() {
             if (this.pt_start && this.pt_finish) {
+                // Reset drawn path
+                this.clearSearch();
+                // Start Search
+                this.cycle_step = 0;
                 this.start_search = true;
                 this.searchDijkstra();
             }
             else {
                 error.innerText = "MISSING POINTS";
             }
+        }
+        clearSearch() {
+            // Reset pathfinding
+            this.traversed = [];
+            this.final_path = [];
+            this.is_complete = false;
+            // Stop searching
+            this.start_search = false;
         }
         searchDijkstra() {
             this.current_search = new Dijkstra(ptToString(this.pt_start), ptToString(this.pt_finish));
@@ -208,26 +222,24 @@ let GameMap = /** @class */ (() => {
         }
         static update() {
             GameMap.current.draw();
-            requestAnimationFrame(update);
+            requestAnimationFrame(GameMap.update);
         }
         // Draw
         draw() {
             var _a;
             // clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            GameMap.current.drawGrid();
-            let gmc = GameMap.current;
-            if (!gmc.is_complete && gmc.start_search) {
-                gmc.cycle_step++;
-                if (gmc.cycle_step % 10 === 0) {
-                    gmc.is_complete = (_a = gmc.current_search) === null || _a === void 0 ? void 0 : _a.takeStep();
-                    gmc.cycle_step = 0;
-                    console.log("step");
+            this.drawGrid();
+            if (!this.is_complete && this.start_search) {
+                this.cycle_step++;
+                if (this.cycle_step % 10 === 0) {
+                    this.is_complete = (_a = this.current_search) === null || _a === void 0 ? void 0 : _a.takeStep();
+                    this.cycle_step = 0;
                 }
             }
-            GameMap.current.drawSearch();
-            if (GameMap.current.is_complete) {
-                GameMap.current.drawPath();
+            this.drawSearch();
+            if (this.is_complete) {
+                this.drawPath();
             }
         }
         // Draw game_grid on canvas
@@ -265,30 +277,6 @@ let GameMap = /** @class */ (() => {
     GameMap.tooltip = Tooltip.BLOCK;
     return GameMap;
 })();
-// Run rendering updates
-function update() {
-    // console.log(GameMap.current.id);
-    // GameMap.current.drawGrid();
-    // let gmc = GameMap.current;
-    // if (!gmc.is_complete && gmc.start_search) {
-    //   gmc.cycle_step++;
-    //   if (gmc.cycle_step % 10 === 0) {
-    //     gmc.is_complete = gmc.current_search?.takeStep();
-    //     gmc.cycle_step = 0;
-    //     console.log("step");
-    //   }
-    // }
-    // GameMap.current.drawSearch();
-    // if (GameMap.current.is_complete) {
-    //   GameMap.current.drawPath();
-    // }
-    GameMap.current.draw();
-    // if (Game.current.isGameOver()) {
-    //   Game.current.runGameOver();
-    // }
-    // Loop update at 60fps
-    requestAnimationFrame(update);
-}
 class Dijkstra {
     constructor(start, finish) {
         this.distances = {};
@@ -1126,12 +1114,16 @@ ttStartBtn.addEventListener("click", () => {
 ttFinishBtn.addEventListener("click", () => {
     GameMap.tooltip = Tooltip.FINISH;
 });
-// Run Search Button
+// New Search Button
 newSearchBtn.addEventListener("click", () => {
     GameMap.newSearch();
 });
 // Run Search Button
 runSearchBtn.addEventListener("click", () => {
     GameMap.current.runSearch();
+});
+// Clear Search Button
+clearSearchBtn.addEventListener("click", () => {
+    GameMap.current.clearSearch();
 });
 //# sourceMappingURL=pathfinding.js.map
