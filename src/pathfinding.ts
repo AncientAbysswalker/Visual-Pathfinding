@@ -50,21 +50,21 @@ const resetMPBtn = document.getElementById(
   "reset-mp-score-btn"
 )! as HTMLButtonElement;
 
-type GridObjects = null | boolean;
+class Block {}
 
-// class Point {
-//   x: number;
-//   y: number;
+type GridObjects = null | boolean | ReducedDifficulty | Block;
 
-//   constructor(x: number, y: number) {
-//     this.x = x;
-//     this.y = y;
-//   }
+interface ReducedDifficulty {
+  difficulty: number;
+}
 
-//   toString(): string {
-//     return `{${this.x},${this.y}}`;
-//   }
-// }
+class Road implements ReducedDifficulty {
+  difficulty: number;
+
+  constructor() {
+    this.difficulty = 5;
+  }
+}
 
 // let grid: GridObjects[][];
 
@@ -287,11 +287,19 @@ class SearchMap {
     }
   }
 
+  difficulty(p: Point) {
+    let obj = this.grid[p.x][p.y];
+
+    if (obj === null) {
+      return 10;
+    }
+  }
+
   // Make a point impassible
   closePoint(p: Point) {
     // Set point to be solid
-    if (this.grid[p.x][p.y] !== false) {
-      this.grid[p.x][p.y] = false; // Update for solid
+    if (!(this.grid[p.x][p.y] instanceof Block)) {
+      this.grid[p.x][p.y] = new Block();
       this.adjacencyList[ptToString(p)] = [];
 
       // Remove entry from adjacency of adjacent points
@@ -317,7 +325,7 @@ class SearchMap {
       for (let p_adj of adjacentPoints(p)) {
         if (
           SearchMap.withinCanvas(p_adj) &&
-          this.grid[p_adj.x][p_adj.y] !== false // Update for solid
+          !(this.grid[p_adj.x][p_adj.y] instanceof Block) // Update for solid
         ) {
           this.adjacencyList[ptToString(p)].push(p_adj);
           let a = this.adjacencyList[ptToString(p_adj)];
@@ -360,7 +368,7 @@ class SearchMap {
     for (let i = 0; i < SearchMap.cols; i++) {
       for (let j = 0; j < SearchMap.rows; j++) {
         let obj = this.grid[i][j];
-        if (obj !== null) {
+        if (obj! instanceof Block) {
           drawTile(toPoint(i, j), "#B6FDFF");
         } else if (samePoint(toPoint(i, j), this.pt_start)) {
           drawTile(toPoint(i, j), "#f00");
@@ -438,7 +446,10 @@ class Dijkstra {
           let nextNode =
             SearchMap.current.adjacencyList[this.smallest][neighbor];
           //calculate new distance to neighboring node
-          let candidate = this.distances[this.smallest] + 1; //nextNode.weight;
+          let candidate =
+            this.distances[this.smallest] +
+            SearchMap.current.difficulty(nextNode); //.weight;
+          console.log(candidate);
           let nextNeighbor = nextNode;
           if (candidate < this.distances[ptToString(nextNeighbor)]) {
             //updating new smallest distance to neighbor
@@ -1326,6 +1337,7 @@ function clk(e: MouseEvent) {
   if (e.buttons == 1 || e.buttons == 3) {
     if (SearchMap.withinCanvas(p)) {
       if (SearchMap.tooltip === Tooltip.BLOCK) SearchMap.current.closePoint(p);
+      if (SearchMap.tooltip === Tooltip.ERASE) SearchMap.current.openPoint(p);
       if (SearchMap.tooltip === Tooltip.START) {
         SearchMap.current.pt_start = p;
       }
