@@ -86,7 +86,7 @@ function stringToPoint(str) {
 function ptToString(p) {
     return `{x: ${p.x}, y: ${p.y}}`;
 }
-function movePoint(p1, p2) {
+function addDimensioned(p1, p2) {
     return { x: p1.x + p2.x, y: p1.y + p2.y };
 }
 function samePoint(p1, p2) {
@@ -94,6 +94,15 @@ function samePoint(p1, p2) {
         return false;
     }
     return p1.x === p2.x && p1.y === p2.y;
+}
+// Return adjacent points in the 4 cardinal directions
+function adjacentPoints(p) {
+    return [
+        addDimensioned(p, dirToVect(Direction.UP)),
+        addDimensioned(p, dirToVect(Direction.DOWN)),
+        addDimensioned(p, dirToVect(Direction.LEFT)),
+        addDimensioned(p, dirToVect(Direction.RIGHT)),
+    ];
 }
 function myIndexOf(arr, o) {
     for (var i = 0; i < arr.length; i++) {
@@ -176,6 +185,7 @@ let SearchMap = /** @class */ (() => {
         static withinCanvas(p) {
             return p.x >= 0 && p.y >= 0 && p.x < SearchMap.cols && p.y < SearchMap.rows;
         }
+        // Create a new grid
         genGrid() {
             this.grid = [];
             for (let i = 0; i < SearchMap.cols; i++) {
@@ -184,47 +194,57 @@ let SearchMap = /** @class */ (() => {
                     this.grid[i][j] = null;
                 }
             }
-            //return grid;
         }
+        // Create a new adjacency list
         genAdjacency() {
             this.adjacencyList = {};
             for (let i = 0; i < SearchMap.cols; i++) {
                 for (let j = 0; j < SearchMap.rows; j++) {
-                    this.adjacencyList[ptToString(toPoint(i, j))] = [];
-                    if (i > 0) {
-                        this.adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i - 1, j));
-                    }
-                    if (j > 0) {
-                        this.adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i, j - 1));
-                    }
-                    if (i < 8 - 1) {
-                        this.adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i + 1, j));
-                    }
-                    if (j < 8 - 1) {
-                        this.adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i, j + 1));
+                    let p = toPoint(i, j);
+                    this.adjacencyList[ptToString(p)] = [];
+                    for (let p_adj of adjacentPoints(p)) {
+                        if (SearchMap.withinCanvas(p_adj)) {
+                            this.adjacencyList[ptToString(p)].push(p_adj);
+                        }
                     }
                 }
             }
-            //return adjacencyList;
         }
+        // Make a point impassible
         closePoint(p) {
-            this.grid[p.x][p.y] = false;
-            this.adjacencyList[ptToString(p)] = [];
-            if (p.x > 0) {
-                let a = this.adjacencyList[ptToString(movePoint(p, dirToVect(Direction.LEFT)))];
-                myIndexOf(a, p) > -1 ? a.splice(myIndexOf(a, p), 1) : false;
+            // Set point to be solid
+            if (this.grid[p.x][p.y] !== false) {
+                this.grid[p.x][p.y] = false; // Update for solid
+                this.adjacencyList[ptToString(p)] = [];
+                // Remove entry from adjacency of adjacent points
+                for (let p_adj of adjacentPoints(p)) {
+                    if (SearchMap.withinCanvas(p_adj)) {
+                        let a = this.adjacencyList[ptToString(p_adj)];
+                        if (myIndexOf(a, p) > -1) {
+                            a.splice(myIndexOf(a, p), 1);
+                        }
+                    }
+                }
             }
-            if (p.y > 0) {
-                let a = this.adjacencyList[ptToString(movePoint(p, dirToVect(Direction.UP)))];
-                myIndexOf(a, p) > -1 ? a.splice(myIndexOf(a, p), 1) : false;
-            }
-            if (p.x < 8 - 1) {
-                let a = this.adjacencyList[ptToString(movePoint(p, dirToVect(Direction.RIGHT)))];
-                myIndexOf(a, p) > -1 ? a.splice(myIndexOf(a, p), 1) : false;
-            }
-            if (p.y < 8 - 1) {
-                let a = this.adjacencyList[ptToString(movePoint(p, dirToVect(Direction.DOWN)))];
-                myIndexOf(a, p) > -1 ? a.splice(myIndexOf(a, p), 1) : false;
+        }
+        // Make a point passible
+        openPoint(p) {
+            // Set point to be empty
+            if (this.grid[p.x][p.y] !== null) {
+                this.grid[p.x][p.y] = null;
+                // Add entry from adjacency of adjacent points
+                this.adjacencyList[ptToString(p)] = [];
+                for (let p_adj of adjacentPoints(p)) {
+                    if (SearchMap.withinCanvas(p_adj) &&
+                        this.grid[p_adj.x][p_adj.y] !== false // Update for solid
+                    ) {
+                        this.adjacencyList[ptToString(p)].push(p_adj);
+                        let a = this.adjacencyList[ptToString(p_adj)];
+                        // if (myIndexOf(a, p) === -1) {
+                        a.push(p);
+                        // }
+                    }
+                }
             }
         }
         static update() {
@@ -314,6 +334,7 @@ class Dijkstra {
         // as long as there is something to visit
         if (this.nodes.values.length) {
             this.smallest = this.nodes.dequeue().val;
+            console.log(this.smallest);
             SearchMap.current.traversed.push(stringToPoint(this.smallest));
             if (this.smallest === this.finish) {
                 //WE ARE DONE
@@ -1097,10 +1118,10 @@ function getMousePos(canvas, evt) {
 // //   memSaveGameMode();
 // // });
 function clk(e) {
+    let pos = getMousePos(canvas, e);
+    let p = toPoint(Math.floor(pos.x / SearchMap.tile_size), Math.floor(pos.y / SearchMap.tile_size));
+    //console.log(p);
     if (e.buttons == 1 || e.buttons == 3) {
-        let pos = getMousePos(canvas, e);
-        let p = toPoint(Math.floor(pos.x / SearchMap.tile_size), Math.floor(pos.y / SearchMap.tile_size));
-        console.log(p);
         if (SearchMap.withinCanvas(p)) {
             if (SearchMap.tooltip === Tooltip.BLOCK)
                 SearchMap.current.closePoint(p);
@@ -1113,11 +1134,15 @@ function clk(e) {
         }
     }
     else if (e.buttons == 2) {
-        console.log(5);
+        SearchMap.current.openPoint(p);
     }
 }
 // Handle setting
 canvas.addEventListener("mousemove", (e) => {
+    clk(e);
+});
+// Handle setting
+canvas.addEventListener("mousedown", (e) => {
     clk(e);
 });
 // Prevent context menu if right-clicking canvas
@@ -1145,6 +1170,7 @@ newSearchBtn.addEventListener("click", () => {
 // Run Search Button
 runSearchBtn.addEventListener("click", () => {
     SearchMap.current.runSearch();
+    console.log(SearchMap.current.adjacencyList);
 });
 // Clear Search Button
 clearSearchBtn.addEventListener("click", () => {
