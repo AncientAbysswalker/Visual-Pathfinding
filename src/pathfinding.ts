@@ -156,53 +156,63 @@ enum Tooltip {
   FINISH,
 }
 
-class GameMap {
-  adjacencyList: { [key: string]: Point[] };
+enum Search {
+  DIJKSTRA = "Dijkstra",
+  ASTAR = "A*",
+}
+
+class SearchMap {
+  // Map parameters
+  static current: SearchMap;
   grid: GridObjects[][];
+  static tile_size = 16;
+  static cols = 100;
+  static rows = 50;
+
+  // Search variables
+  static selected_search = Search.DIJKSTRA;
+  current_search;
+  adjacencyList: { [key: string]: Point[] };
   traversed: Point[] = [];
   final_path: Point[] = [];
-  static current: GameMap;
-  static id = 0;
-  id: number;
-
-  static tile_size = 16;
-
-  cycle_step = 0;
-  current_search;
-  is_complete = false;
-  start_search = false;
-
-  static tooltip = Tooltip.BLOCK;
   pt_start: Point = undefined;
   pt_finish: Point = undefined;
 
+  // Update and render variables
+  cycle_step = 0;
+  is_complete = false;
+  start_search = false;
+
+  // Tooltip
+  static tooltip = Tooltip.BLOCK;
+
+  // To Remove
+  static id = 0;
+  id: number;
+
+  // Create new search map instance
   static newSearch() {
     console.log("new_S");
-    if (!GameMap.current) {
-      GameMap.current = new GameMap();
-      GameMap.update();
+    if (!SearchMap.current) {
+      SearchMap.current = new SearchMap();
+      SearchMap.update();
     } else {
-      GameMap.current = new GameMap();
+      SearchMap.current = new SearchMap();
     }
   }
 
+  // Constructor
   private constructor() {
-    this.genAdjacency(); //this.adjacencyList =
-    this.genGrid(); //this.grid =
-    GameMap.id++;
-    this.id = GameMap.id;
+    this.genAdjacency();
+    this.genGrid();
+    // SearchMap.id++;
+    // this.id = SearchMap.id;
 
-    //UNNEEDED??
-    this.traversed = [];
-    this.final_path = [];
-    this.cycle_step = 0;
-    this.current_search;
-    this.is_complete = false;
-    this.start_search = false;
     this.pt_start = { x: 0, y: 0 };
     this.pt_finish = { x: 5, y: 5 };
   }
 
+  //
   runSearch() {
     if (this.pt_start && this.pt_finish) {
       // Reset drawn path
@@ -212,7 +222,7 @@ class GameMap {
       this.cycle_step = 0;
       this.start_search = true;
 
-      this.searchDijkstra();
+      this.current_search = SearchMap.chosenAlgo(this.pt_start, this.pt_finish);
     } else {
       error.innerText = "MISSING POINTS";
     }
@@ -228,19 +238,22 @@ class GameMap {
     this.start_search = false;
   }
 
-  searchDijkstra() {
-    this.current_search = new Dijkstra(
-      ptToString(this.pt_start),
-      ptToString(this.pt_finish)
-    );
-    this.cycle_step = 0;
+  static chosenAlgo(start: Point, finish: Point) {
+    if (SearchMap.selected_search === Search.DIJKSTRA) {
+      return new Dijkstra(ptToString(start), ptToString(finish));
+    }
+  }
+
+  // Return if the point is within the canvas
+  static withinCanvas(p: Point) {
+    return p.x >= 0 && p.y >= 0 && p.x < SearchMap.cols && p.y < SearchMap.rows;
   }
 
   genGrid() {
     this.grid = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < SearchMap.cols; i++) {
       this.grid[i] = [];
-      for (let j = 0; j < 8; j++) {
+      for (let j = 0; j < SearchMap.rows; j++) {
         this.grid[i][j] = null;
       }
     }
@@ -249,8 +262,8 @@ class GameMap {
 
   genAdjacency() {
     this.adjacencyList = {};
-    for (let i = 0; i < 8; i++) {
-      for (let j = 0; j < 8; j++) {
+    for (let i = 0; i < SearchMap.cols; i++) {
+      for (let j = 0; j < SearchMap.rows; j++) {
         this.adjacencyList[ptToString(toPoint(i, j))] = [];
         if (i > 0) {
           this.adjacencyList[ptToString(toPoint(i, j))].push(toPoint(i - 1, j));
@@ -299,9 +312,9 @@ class GameMap {
   }
 
   static update() {
-    GameMap.current.draw();
+    SearchMap.current.draw();
 
-    requestAnimationFrame(GameMap.update);
+    requestAnimationFrame(SearchMap.update);
   }
 
   // Draw
@@ -326,9 +339,8 @@ class GameMap {
 
   // Draw game_grid on canvas
   drawGrid() {
-    console.log("grid", this.id);
-    for (let i = 0; i < 8; i++) {
-      for (let j = 0; j < 8; j++) {
+    for (let i = 0; i < SearchMap.cols; i++) {
+      for (let j = 0; j < SearchMap.rows; j++) {
         let obj = this.grid[i][j];
         if (obj !== null) {
           drawTile(toPoint(i, j), "#B6FDFF");
@@ -342,7 +354,6 @@ class GameMap {
   }
 
   drawSearch() {
-    console.log("search", this.id);
     for (let p of this.traversed) {
       drawTile(p, "#ff0");
     }
@@ -372,7 +383,7 @@ class Dijkstra {
     this.finish = finish;
 
     //build up initial state
-    for (let vertex in GameMap.current.adjacencyList) {
+    for (let vertex in SearchMap.current.adjacencyList) {
       if (vertex === start) {
         this.distances[vertex] = 0;
         this.nodes.enqueue(vertex, 0);
@@ -388,7 +399,7 @@ class Dijkstra {
     // as long as there is something to visit
     if (this.nodes.values.length) {
       this.smallest = this.nodes.dequeue().val;
-      GameMap.current.traversed.push(stringToPoint(this.smallest));
+      SearchMap.current.traversed.push(stringToPoint(this.smallest));
       if (this.smallest === this.finish) {
         //WE ARE DONE
         //BUILD UP PATH TO RETURN AT END
@@ -397,15 +408,16 @@ class Dijkstra {
           this.smallest = this.previous[this.smallest];
         }
         //break;
-        GameMap.current.final_path = this.path
+        SearchMap.current.final_path = this.path
           .concat(stringToPoint(this.smallest))
           .reverse();
         return true;
       }
       if (this.smallest || this.distances[this.smallest] !== Infinity) {
-        for (let neighbor in GameMap.current.adjacencyList[this.smallest]) {
+        for (let neighbor in SearchMap.current.adjacencyList[this.smallest]) {
           //find neighboring node
-          let nextNode = GameMap.current.adjacencyList[this.smallest][neighbor];
+          let nextNode =
+            SearchMap.current.adjacencyList[this.smallest][neighbor];
           //calculate new distance to neighboring node
           let candidate = this.distances[this.smallest] + 1; //nextNode.weight;
           let nextNeighbor = nextNode;
@@ -421,7 +433,7 @@ class Dijkstra {
       }
       return false;
     } else {
-      GameMap.current.final_path = this.path
+      SearchMap.current.final_path = this.path
         .concat(stringToPoint(this.smallest))
         .reverse();
       return true;
@@ -569,21 +581,20 @@ class prioNode {
 function drawTile(p: Point, color: string) {
   ctx.beginPath();
   ctx.rect(
-    GameMap.tile_size * p.x,
-    GameMap.tile_size * p.y,
-    GameMap.tile_size,
-    GameMap.tile_size
+    SearchMap.tile_size * p.x,
+    SearchMap.tile_size * p.y,
+    SearchMap.tile_size,
+    SearchMap.tile_size
   );
   ctx.fillStyle = color;
   ctx.fill();
   ctx.closePath();
 }
 
-GameMap.newSearch();
-//GameMap.current.searchDijkstra();
-GameMap.current.closePoint({ x: 1, y: 0 });
-GameMap.current.closePoint({ x: 1, y: 1 });
-GameMap.current.closePoint({ x: 0, y: 3 });
+SearchMap.newSearch();
+SearchMap.current.closePoint({ x: 1, y: 0 });
+SearchMap.current.closePoint({ x: 1, y: 1 });
+SearchMap.current.closePoint({ x: 0, y: 3 });
 
 function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
   var rect = canvas.getBoundingClientRect();
@@ -1286,22 +1297,37 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 // //   memSaveGameMode();
 // // });
 
-canvas.addEventListener("mousemove", (e) => {
+function clk(e: MouseEvent) {
   if (e.buttons == 1 || e.buttons == 3) {
     let pos = getMousePos(canvas, e);
     let p = toPoint(
-      Math.floor(pos.x / GameMap.tile_size),
-      Math.floor(pos.y / GameMap.tile_size)
+      Math.floor(pos.x / SearchMap.tile_size),
+      Math.floor(pos.y / SearchMap.tile_size)
     );
+    console.log(p);
 
-    if (GameMap.tooltip === Tooltip.BLOCK) GameMap.current.closePoint(p);
-    if (GameMap.tooltip === Tooltip.START) {
-      GameMap.current.pt_start = p;
+    if (SearchMap.withinCanvas(p)) {
+      if (SearchMap.tooltip === Tooltip.BLOCK) SearchMap.current.closePoint(p);
+      if (SearchMap.tooltip === Tooltip.START) {
+        SearchMap.current.pt_start = p;
+      }
+      if (SearchMap.tooltip === Tooltip.FINISH) {
+        SearchMap.current.pt_finish = p;
+      }
     }
-    if (GameMap.tooltip === Tooltip.FINISH) {
-      GameMap.current.pt_finish = p;
-    }
+  } else if (e.buttons == 2) {
+    console.log(5);
   }
+}
+
+// Handle setting
+canvas.addEventListener("mousemove", (e) => {
+  clk(e);
+});
+
+// Prevent context menu if right-clicking canvas
+canvas.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
 });
 
 // // // Reset Scores event handlers
@@ -1314,21 +1340,21 @@ canvas.addEventListener("mousemove", (e) => {
 
 // Tooltip Buttons
 ttStartBtn.addEventListener("click", () => {
-  GameMap.tooltip = Tooltip.START;
+  SearchMap.tooltip = Tooltip.START;
 });
 ttFinishBtn.addEventListener("click", () => {
-  GameMap.tooltip = Tooltip.FINISH;
+  SearchMap.tooltip = Tooltip.FINISH;
 });
 
 // New Search Button
 newSearchBtn.addEventListener("click", () => {
-  GameMap.newSearch();
+  SearchMap.newSearch();
 });
 // Run Search Button
 runSearchBtn.addEventListener("click", () => {
-  GameMap.current.runSearch();
+  SearchMap.current.runSearch();
 });
 // Clear Search Button
 clearSearchBtn.addEventListener("click", () => {
-  GameMap.current.clearSearch();
+  SearchMap.current.clearSearch();
 });
