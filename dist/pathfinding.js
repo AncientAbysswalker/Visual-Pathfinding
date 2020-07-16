@@ -22,15 +22,28 @@ const clearSearchBtn = document.getElementById("clear-search-btn");
 // Tooltip Buttons
 const ttStartBtn = document.getElementById("tt-start-btn");
 const ttFinishBtn = document.getElementById("tt-finish-btn");
+const ttBlockBtn = document.getElementById("tt-block-btn");
+const ttRoadBtn = document.getElementById("tt-road-btn");
+const ttForestBtn = document.getElementById("tt-forest-btn");
 const error = document.getElementById("error");
 // Reset Scores Button Elements
 const resetSPBtn = document.getElementById("reset-sp-score-btn");
 const resetMPBtn = document.getElementById("reset-mp-score-btn");
+// Sprites
+let s_road = new Image();
+s_road.src = "img/s_road.png";
 class Block {
 }
 class Road {
     constructor() {
         this.difficulty = 5;
+        this.subsprite = 0;
+    }
+}
+class Forest {
+    constructor() {
+        this.difficulty = 20;
+        this.subsprite = 0;
     }
 }
 // let grid: GridObjects[][];
@@ -114,6 +127,8 @@ var Tooltip;
     Tooltip[Tooltip["BLOCK"] = 1] = "BLOCK";
     Tooltip[Tooltip["START"] = 2] = "START";
     Tooltip[Tooltip["FINISH"] = 3] = "FINISH";
+    Tooltip[Tooltip["ROAD"] = 4] = "ROAD";
+    Tooltip[Tooltip["FOREST"] = 5] = "FOREST";
 })(Tooltip || (Tooltip = {}));
 var Search;
 (function (Search) {
@@ -211,6 +226,9 @@ let SearchMap = /** @class */ (() => {
             if (obj === null) {
                 return 10;
             }
+            else if (obj instanceof Road || obj instanceof Forest) {
+                return obj.difficulty;
+            }
         }
         // Make a point impassible
         closePoint(p) {
@@ -249,6 +267,85 @@ let SearchMap = /** @class */ (() => {
                 }
             }
         }
+        // Make a point a road
+        placeRoad(p) {
+            // Set point to be empty
+            if (!(this.grid[p.x][p.y] instanceof Road)) {
+                let new_road = new Road();
+                adjacentPoints(p).forEach((p_adj, index) => {
+                    if (this.grid[p_adj.x][p_adj.y] instanceof Road) {
+                        let adder1 = 0;
+                        let adder2 = 0;
+                        if (index === 1) {
+                            adder1 = 8;
+                            adder2 = 4;
+                        }
+                        else if (index === 0) {
+                            adder1 = 4;
+                            adder2 = 8;
+                        }
+                        else if (index === 3) {
+                            adder1 = 2;
+                            adder2 = 1;
+                        }
+                        else if (index === 2) {
+                            adder1 = 1;
+                            adder2 = 2;
+                        }
+                        new_road.subsprite += adder2;
+                        // @ts-ignore
+                        this.grid[p_adj.x][p_adj.y].subsprite += adder1;
+                        console.log(adder1, adder2);
+                    }
+                });
+                this.grid[p.x][p.y] = new_road;
+                // // Add entry from adjacency of adjacent points
+                // this.adjacencyList[ptToString(p)] = [];
+                // for (let p_adj of adjacentPoints(p)) {
+                //   if (
+                //     SearchMap.withinCanvas(p_adj) &&
+                //     !(this.grid[p_adj.x][p_adj.y] instanceof Block) // Update for solid
+                //   ) {
+                //     this.adjacencyList[ptToString(p)].push(p_adj);
+                //     let a = this.adjacencyList[ptToString(p_adj)];
+                //     // if (myIndexOf(a, p) === -1) {
+                //     a.push(p);
+                //     // }
+                //   }
+                // }
+            }
+        }
+        // Make a point a road
+        placeForest(p) {
+            // Set point to be empty
+            if (!(this.grid[p.x][p.y] instanceof Forest)) {
+                let new_forest = new Forest();
+                // adjacentPoints(p).forEach((p_adj, index) => {
+                //   if (this.grid[p_adj.x][p_adj.y] instanceof Road) {
+                //     let adder1 = 0;
+                //     let adder2 = 0;
+                //     if (index === 1) {
+                //       adder1 = 8;
+                //       adder2 = 4;
+                //     } else if (index === 0) {
+                //       adder1 = 4;
+                //       adder2 = 8;
+                //     } else if (index === 3) {
+                //       adder1 = 2;
+                //       adder2 = 1;
+                //     } else if (index === 2) {
+                //       adder1 = 1;
+                //       adder2 = 2;
+                //     }
+                //     new_forest.subsprite += adder2;
+                //     // @ts-ignore
+                //     this.grid[p_adj.x][p_adj.y].subsprite += adder1;
+                //     console.log(adder1, adder2);
+                //   }
+                // });
+                this.grid[p.x][p.y] = new_forest;
+            }
+        }
         static update() {
             SearchMap.current.draw();
             requestAnimationFrame(SearchMap.update);
@@ -277,26 +374,54 @@ let SearchMap = /** @class */ (() => {
                 for (let j = 0; j < SearchMap.rows; j++) {
                     let obj = this.grid[i][j];
                     if (obj instanceof Block) {
-                        drawTile(toPoint(i, j), "#B6FDFF");
+                        this.drawTile(toPoint(i, j), "#B6FDFF");
+                    }
+                    else if (obj instanceof Road) {
+                        this.drawTileRoad(toPoint(i, j));
+                    }
+                    else if (obj instanceof Forest) {
+                        this.drawTile(toPoint(i, j), "#f0f");
                     }
                     else if (samePoint(toPoint(i, j), this.pt_start)) {
-                        drawTile(toPoint(i, j), "#f00");
+                        this.drawTile(toPoint(i, j), "#f00");
                     }
                     else if (samePoint(toPoint(i, j), this.pt_finish)) {
-                        drawTile(toPoint(i, j), "#0f0");
+                        this.drawTile(toPoint(i, j), "#0f0");
                     }
                 }
             }
         }
         drawSearch() {
             for (let p of this.traversed) {
-                drawTile(p, "#ff0");
+                this.drawTile(p, "#ff0");
             }
         }
         drawPath() {
             for (let p of this.final_path) {
-                drawTile(p, "#f00");
+                this.drawTile(p, "#f00");
             }
+        }
+        drawTile(p, color) {
+            ctx.beginPath();
+            ctx.rect(SearchMap.tile_size * p.x, SearchMap.tile_size * p.y, SearchMap.tile_size, SearchMap.tile_size);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.closePath();
+        }
+        drawTileRoad(p) {
+            // @ts-ignore - Will always be instance of Road()
+            let subsprite = this.grid[p.x][p.y].subsprite;
+            ctx.drawImage(s_road, 16 * subsprite, 0, 16, 16, SearchMap.tile_size * p.x, SearchMap.tile_size * p.y, SearchMap.tile_size, SearchMap.tile_size);
+            // ctx.beginPath();
+            // ctx.rect(
+            //   SearchMap.tile_size * p.x,
+            //   SearchMap.tile_size * p.y,
+            //   SearchMap.tile_size,
+            //   SearchMap.tile_size
+            // );
+            // ctx.fillStyle = color;
+            // ctx.fill();
+            // ctx.closePath();
         }
     }
     SearchMap.tile_size = 16;
@@ -501,13 +626,6 @@ class prioNode {
 //     ctx.fillText(`P2 Score: ${this.p2_snake.score}`, canvas.width - 30, 30); //
 //   }
 // }
-function drawTile(p, color) {
-    ctx.beginPath();
-    ctx.rect(SearchMap.tile_size * p.x, SearchMap.tile_size * p.y, SearchMap.tile_size, SearchMap.tile_size);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.closePath();
-}
 SearchMap.newSearch();
 SearchMap.current.closePoint({ x: 1, y: 0 });
 SearchMap.current.closePoint({ x: 1, y: 1 });
@@ -1122,25 +1240,31 @@ function getMousePos(canvas, evt) {
 // //   memSaveGameMode();
 // // });
 function clk(e) {
-    let pos = getMousePos(canvas, e);
-    let p = toPoint(Math.floor(pos.x / SearchMap.tile_size), Math.floor(pos.y / SearchMap.tile_size));
-    //console.log(p);
-    if (e.buttons == 1 || e.buttons == 3) {
-        if (SearchMap.withinCanvas(p)) {
-            if (SearchMap.tooltip === Tooltip.BLOCK)
-                SearchMap.current.closePoint(p);
-            if (SearchMap.tooltip === Tooltip.ERASE)
-                SearchMap.current.openPoint(p);
-            if (SearchMap.tooltip === Tooltip.START) {
-                SearchMap.current.pt_start = p;
-            }
-            if (SearchMap.tooltip === Tooltip.FINISH) {
-                SearchMap.current.pt_finish = p;
+    if (!SearchMap.current.start_search) {
+        let pos = getMousePos(canvas, e);
+        let p = toPoint(Math.floor(pos.x / SearchMap.tile_size), Math.floor(pos.y / SearchMap.tile_size));
+        //console.log(p);
+        if (e.buttons == 1 || e.buttons == 3) {
+            if (SearchMap.withinCanvas(p)) {
+                if (SearchMap.tooltip === Tooltip.BLOCK)
+                    SearchMap.current.closePoint(p);
+                if (SearchMap.tooltip === Tooltip.ERASE)
+                    SearchMap.current.openPoint(p);
+                if (SearchMap.tooltip === Tooltip.ROAD)
+                    SearchMap.current.placeRoad(p);
+                if (SearchMap.tooltip === Tooltip.FOREST)
+                    SearchMap.current.placeForest(p);
+                if (SearchMap.tooltip === Tooltip.START) {
+                    SearchMap.current.pt_start = p;
+                }
+                if (SearchMap.tooltip === Tooltip.FINISH) {
+                    SearchMap.current.pt_finish = p;
+                }
             }
         }
-    }
-    else if (e.buttons == 2) {
-        SearchMap.current.openPoint(p);
+        else if (e.buttons == 2) {
+            SearchMap.current.openPoint(p);
+        }
     }
 }
 // Handle setting
@@ -1168,6 +1292,15 @@ ttStartBtn.addEventListener("click", () => {
 });
 ttFinishBtn.addEventListener("click", () => {
     SearchMap.tooltip = Tooltip.FINISH;
+});
+ttBlockBtn.addEventListener("click", () => {
+    SearchMap.tooltip = Tooltip.BLOCK;
+});
+ttRoadBtn.addEventListener("click", () => {
+    SearchMap.tooltip = Tooltip.ROAD;
+});
+ttForestBtn.addEventListener("click", () => {
+    SearchMap.tooltip = Tooltip.FOREST;
 });
 // New Search Button
 newSearchBtn.addEventListener("click", () => {
