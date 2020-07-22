@@ -156,3 +156,11 @@ canvas {
   justify-content: left;
   height: 25px;
 }
+
+.error {
+  visibility: hidden;
+}
+
+.error.visible {
+  visibility: visible;
+}

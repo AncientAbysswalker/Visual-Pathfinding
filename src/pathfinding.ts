@@ -59,7 +59,13 @@ const resetMPBtn = document.getElementById(
 
 // Sprites
 let s_road = new Image();
-s_road.src = "img/s_road.png";
+let s_road2 = new Image();
+let s_road3 = new Image();
+let s_road4 = new Image();
+s_road.src = "img/s_road_ul.png";
+s_road2.src = "img/s_road_ur.png";
+s_road3.src = "img/s_road_dl.png";
+s_road4.src = "img/s_road_dr.png";
 
 class Block {}
 
@@ -73,12 +79,56 @@ interface HasSpriteSheet {
   subsprite: number;
 }
 
+interface Adjacency {
+  U: boolean;
+  UL: boolean;
+  L: boolean;
+  DL: boolean;
+  D: boolean;
+  DR: boolean;
+  R: boolean;
+  UR: boolean;
+}
+
+let blankAdjacency: Adjacency = {
+  U: false,
+  UL: false,
+  L: false,
+  DL: false,
+  D: false,
+  DR: false,
+  R: false,
+  UR: false,
+};
+
+function dirReverse(dir: Dir): Dir {
+  switch (dir) {
+    case Dir.U:
+      return Dir.D;
+    case Dir.D:
+      return Dir.U;
+    case Dir.L:
+      return Dir.R;
+    case Dir.R:
+      return Dir.L;
+    case Dir.UL:
+      return Dir.DR;
+    case Dir.UR:
+      return Dir.DL;
+    case Dir.DL:
+      return Dir.UR;
+    case Dir.DR:
+      return Dir.UL;
+  }
+}
+
 class Road implements ReducedDifficulty, HasSpriteSheet {
   difficulty: number;
   subsprite: number;
+  adjacent: Adjacency = { ...blankAdjacency };
 
   constructor() {
-    this.difficulty = 5;
+    this.difficulty = 1;
     this.subsprite = 0;
   }
 }
@@ -105,28 +155,37 @@ class Forest implements ReducedDifficulty, HasSpriteSheet {
 // grid[1][1] = true;
 // grid[5][5] = true;
 
-// Directionality ENUM
-enum Direction {
-  NONE,
-  UP,
-  DOWN,
-  LEFT,
-  RIGHT,
+// Dirality ENUM
+enum Dir {
+  U = "U",
+  D = "D",
+  L = "L",
+  R = "R",
+  UL = "UL",
+  UR = "UR",
+  DL = "DL",
+  DR = "DR",
 }
 
 // Convert directionality to vector
-function dirToVect(dir: Direction): Vector {
+function dirToVect(dir: Dir): Vector {
   switch (dir) {
-    case Direction.NONE:
-      return { x: 0, y: 0 };
-    case Direction.UP:
+    case Dir.U:
       return { x: 0, y: -1 };
-    case Direction.DOWN:
+    case Dir.D:
       return { x: 0, y: 1 };
-    case Direction.LEFT:
+    case Dir.L:
       return { x: -1, y: 0 };
-    case Direction.RIGHT:
+    case Dir.R:
       return { x: 1, y: 0 };
+    case Dir.UL:
+      return { x: -1, y: -1 };
+    case Dir.UR:
+      return { x: 1, y: -1 };
+    case Dir.DL:
+      return { x: -1, y: 1 };
+    case Dir.DR:
+      return { x: 1, y: 1 };
   }
 }
 
@@ -170,10 +229,10 @@ function samePoint(p1: Point, p2: Point) {
 // Return adjacent points in the 4 cardinal directions
 function adjacentPoints(p: Point) {
   return [
-    addDimensioned(p, dirToVect(Direction.UP)),
-    addDimensioned(p, dirToVect(Direction.DOWN)),
-    addDimensioned(p, dirToVect(Direction.LEFT)),
-    addDimensioned(p, dirToVect(Direction.RIGHT)),
+    addDimensioned(p, dirToVect(Dir.U)),
+    addDimensioned(p, dirToVect(Dir.D)),
+    addDimensioned(p, dirToVect(Dir.L)),
+    addDimensioned(p, dirToVect(Dir.R)),
   ];
 }
 
@@ -247,8 +306,8 @@ class SearchMap {
     // SearchMap.id++;
     // this.id = SearchMap.id;
 
-    this.pt_start = { x: 0, y: 0 };
-    this.pt_finish = { x: 5, y: 5 };
+    //this.pt_start = { x: 0, y: 0 };
+    //this.pt_finish = { x: 5, y: 5 };
   }
 
   //
@@ -263,7 +322,7 @@ class SearchMap {
 
       this.current_search = SearchMap.chosenAlgo(this.pt_start, this.pt_finish);
     } else {
-      error.innerText = "MISSING POINTS";
+      showError("MISSING POINTS");
     }
   }
 
@@ -326,11 +385,24 @@ class SearchMap {
     }
   }
 
+  private setGrid(p: Point, o: GridObjects) {
+    this.grid[p.x][p.y] = o;
+  }
+
+  private getGrid(p: Point) {
+    return this.grid[p.x][p.y];
+  }
+
+  private getAdjacent(p: Point, dir: Dir) {
+    let d = dirToVect(dir);
+    return this.grid[p.x + d.x][p.y + d.y];
+  }
+
   // Make a point impassible
   closePoint(p: Point) {
     // Set point to be solid
-    if (!(this.grid[p.x][p.y] instanceof Block)) {
-      this.grid[p.x][p.y] = new Block();
+    if (!(this.getGrid(p) instanceof Block)) {
+      this.setGrid(p, new Block());
       this.adjacencyList[ptToString(p)] = [];
 
       // Remove entry from adjacency of adjacent points
@@ -371,34 +443,58 @@ class SearchMap {
   // Make a point a road
   placeRoad(p: Point) {
     // Set point to be empty
-    if (!(this.grid[p.x][p.y] instanceof Road)) {
+    if (!(this.getGrid(p) instanceof Road)) {
       let new_road = new Road();
 
-      adjacentPoints(p).forEach((p_adj, index) => {
-        if (this.grid[p_adj.x][p_adj.y] instanceof Road) {
-          let adder1 = 0;
-          let adder2 = 0;
-          if (index === 1) {
-            adder1 = 8;
-            adder2 = 4;
-          } else if (index === 0) {
-            adder1 = 4;
-            adder2 = 8;
-          } else if (index === 3) {
-            adder1 = 2;
-            adder2 = 1;
-          } else if (index === 2) {
-            adder1 = 1;
-            adder2 = 2;
-          }
-          new_road.subsprite += adder2;
-          // @ts-ignore
-          this.grid[p_adj.x][p_adj.y].subsprite += adder1;
-          console.log(adder1, adder2);
-        }
-      });
+      for (var _dir of Object.keys(Dir)) {
+        let dir = Dir[_dir];
+        // console.log(dir);
+        // console.log(Dir[dir]);
+        let p_adj = this.getAdjacent(p, dir);
 
-      this.grid[p.x][p.y] = new_road;
+        console.log(p_adj);
+        if (p_adj instanceof Road) {
+          console.log("nroad");
+          new_road.adjacent[dir] = true;
+          p_adj.adjacent[dirReverse(dir)] = true;
+        }
+        // @ts-ignore
+        console.log(p_adj?.adjacent);
+      }
+
+      console.log(new_road.adjacent);
+
+      // new_road.adjacent.D = true;
+      // new_road.adjacent.U = true;
+      // new_road.adjacent.L = true;
+      // new_road.adjacent.R = true;
+
+      // adjacentPoints(p).forEach((p_adj, index) => {
+      //   if (this.grid[p_adj.x][p_adj.y] instanceof Road) {
+      //     let adder1 = 0;
+      //     let adder2 = 0;
+      //     if (index === 1) {
+      //       adder1 = 8;
+      //       adder2 = 4;
+      //     } else if (index === 0) {
+      //       adder1 = 4;
+      //       adder2 = 8;
+      //     } else if (index === 3) {
+      //       adder1 = 2;
+      //       adder2 = 1;
+      //     } else if (index === 2) {
+      //       adder1 = 1;
+      //       adder2 = 2;
+      //     }
+      //     new_road.subsprite += adder2;
+      //     // @ts-ignore
+      //     this.grid[p_adj.x][p_adj.y].subsprite += adder1;
+      //     console.log(adder1, adder2);
+      //   }
+      // });
+
+      //this.grid[p.x][p.y] = new_road;
+      this.setGrid(p, new_road);
 
       // // Add entry from adjacency of adjacent points
       // this.adjacencyList[ptToString(p)] = [];
@@ -524,28 +620,53 @@ class SearchMap {
 
   drawTileRoad(p: Point) {
     // @ts-ignore - Will always be instance of Road()
-    let subsprite = this.grid[p.x][p.y].subsprite;
+    let obj = this.getGrid(p) as Road;
+    // let subsprite =
+    //   +obj.adjacent.L + 2 * +obj.adjacent.UL + 4 * +obj.adjacent.U; //this.grid[p.x][p.y].subsprite;
     ctx.drawImage(
       s_road,
-      16 * subsprite,
+      8 * (+obj.adjacent.L + 2 * +obj.adjacent.UL + 4 * +obj.adjacent.U),
       0,
-      16,
-      16,
+      8,
+      8,
       SearchMap.tile_size * p.x,
       SearchMap.tile_size * p.y,
-      SearchMap.tile_size,
-      SearchMap.tile_size
+      SearchMap.tile_size / 2,
+      SearchMap.tile_size / 2
     );
-    // ctx.beginPath();
-    // ctx.rect(
-    //   SearchMap.tile_size * p.x,
-    //   SearchMap.tile_size * p.y,
-    //   SearchMap.tile_size,
-    //   SearchMap.tile_size
-    // );
-    // ctx.fillStyle = color;
-    // ctx.fill();
-    // ctx.closePath();
+    ctx.drawImage(
+      s_road2,
+      8 * (+obj.adjacent.U + 2 * +obj.adjacent.UR + 4 * +obj.adjacent.R),
+      0,
+      8,
+      8,
+      8 + SearchMap.tile_size * p.x,
+      SearchMap.tile_size * p.y,
+      SearchMap.tile_size / 2,
+      SearchMap.tile_size / 2
+    );
+    ctx.drawImage(
+      s_road3,
+      8 * (+obj.adjacent.D + 2 * +obj.adjacent.DL + 4 * +obj.adjacent.L),
+      0,
+      8,
+      8,
+      SearchMap.tile_size * p.x,
+      8 + SearchMap.tile_size * p.y,
+      SearchMap.tile_size / 2,
+      SearchMap.tile_size / 2
+    );
+    ctx.drawImage(
+      s_road4,
+      8 * (+obj.adjacent.R + 2 * +obj.adjacent.DR + 4 * +obj.adjacent.D),
+      0,
+      8,
+      8,
+      8 + SearchMap.tile_size * p.x,
+      8 + SearchMap.tile_size * p.y,
+      SearchMap.tile_size / 2,
+      SearchMap.tile_size / 2
+    );
   }
 }
 
@@ -582,11 +703,16 @@ class Dijkstra {
     // as long as there is something to visit
     if (this.nodes.values.length) {
       this.smallest = this.nodes.dequeue().val;
-      console.log(this.smallest);
+
+      // End searching if all remaining nodes are infinitely far from the start
+      if (this.distances[this.smallest] === Infinity) {
+        return true;
+      }
+
       SearchMap.current.traversed.push(stringToPoint(this.smallest));
       if (this.smallest === this.finish) {
         //WE ARE DONE
-        //BUILD UP PATH TO RETURN AT END
+        //BUILD U PATH TO RETURN AT END
         while (this.previous[this.smallest]) {
           this.path.push(stringToPoint(this.smallest));
           this.smallest = this.previous[this.smallest];
@@ -617,8 +743,8 @@ class Dijkstra {
             this.nodes.enqueue(ptToString(nextNeighbor), candidate);
           }
         }
+        return false;
       }
-      return false;
     } else {
       SearchMap.current.final_path = this.path
         .concat(stringToPoint(this.smallest))
@@ -783,43 +909,43 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 // let crown = new Image();
 // crown.src = "img/crown.png";
 
-// // Directionality ENUM
-// enum Direction {
+// // Dirality ENUM
+// enum Dir {
 //   NONE,
-//   UP,
-//   DOWN,
-//   LEFT,
-//   RIGHT,
+//   U,
+//   D,
+//   L,
+//   R,
 // }
 
 // // Flip directionality
-// function opposingDirection(dir: Direction): Direction {
+// function opposingDir(dir: Dir): Dir {
 //   switch (dir) {
-//     case Direction.NONE:
-//       return Direction.NONE;
-//     case Direction.UP:
-//       return Direction.DOWN;
-//     case Direction.DOWN:
-//       return Direction.UP;
-//     case Direction.LEFT:
-//       return Direction.RIGHT;
-//     case Direction.RIGHT:
-//       return Direction.LEFT;
+//     case Dir.NONE:
+//       return Dir.NONE;
+//     case Dir.U:
+//       return Dir.D;
+//     case Dir.D:
+//       return Dir.U;
+//     case Dir.L:
+//       return Dir.R;
+//     case Dir.R:
+//       return Dir.L;
 //   }
 // }
 
 // // Convert directionality to vector
-// function dirToVect(dir: Direction): Vector {
+// function dirToVect(dir: Dir): Vector {
 //   switch (dir) {
-//     case Direction.NONE:
+//     case Dir.NONE:
 //       return { x: 0, y: 0 };
-//     case Direction.UP:
+//     case Dir.U:
 //       return { x: 0, y: -1 };
-//     case Direction.DOWN:
+//     case Dir.D:
 //       return { x: 0, y: 1 };
-//     case Direction.LEFT:
+//     case Dir.L:
 //       return { x: -1, y: 0 };
-//     case Direction.RIGHT:
+//     case Dir.R:
 //       return { x: 1, y: 0 };
 //   }
 // }
@@ -1180,33 +1306,33 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 //   // controlSnakes(this: Game, e: KeyboardEvent) {
 //   //   if (e.key === "Up" || e.key === "ArrowUp") {
 //   //     e.preventDefault();
-//   //     this.p1_snake.setFacing(Direction.UP);
+//   //     this.p1_snake.setFacing(Dir.U);
 //   //   }
 //   //   if (e.key === "Down" || e.key === "ArrowDown") {
 //   //     e.preventDefault();
-//   //     this.p1_snake.setFacing(Direction.DOWN);
+//   //     this.p1_snake.setFacing(Dir.D);
 //   //   }
 //   //   if (e.key === "Left" || e.key === "ArrowLeft") {
 //   //     e.preventDefault();
-//   //     this.p1_snake.setFacing(Direction.LEFT);
+//   //     this.p1_snake.setFacing(Dir.L);
 //   //   }
 //   //   if (e.key === "Right" || e.key === "ArrowRight") {
 //   //     e.preventDefault();
-//   //     this.p1_snake.setFacing(Direction.RIGHT);
+//   //     this.p1_snake.setFacing(Dir.R);
 //   //   }
 
 //   //   if (this.p2_snake) {
 //   //     if (e.key === "W" || e.key === "w") {
-//   //       this.p2_snake.setFacing(Direction.UP);
+//   //       this.p2_snake.setFacing(Dir.U);
 //   //     }
 //   //     if (e.key === "S" || e.key === "s") {
-//   //       this.p2_snake.setFacing(Direction.DOWN);
+//   //       this.p2_snake.setFacing(Dir.D);
 //   //     }
 //   //     if (e.key === "A" || e.key === "a") {
-//   //       this.p2_snake.setFacing(Direction.LEFT);
+//   //       this.p2_snake.setFacing(Dir.L);
 //   //     }
 //   //     if (e.key === "D" || e.key === "d") {
-//   //       this.p2_snake.setFacing(Direction.RIGHT);
+//   //       this.p2_snake.setFacing(Dir.R);
 //   //     }
 //   //   }
 //   // }
@@ -1218,8 +1344,8 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 
 // //   id: number;
 // //   seg_to_gen: number;
-// //   last_facing: Direction;
-// //   current_facing: Direction;
+// //   last_facing: Dir;
+// //   current_facing: Dir;
 // //   score: number;
 // //   disabled: boolean;
 
@@ -1231,8 +1357,8 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 
 // //     this.id = id;
 // //     this.seg_to_gen = 5;
-// //     this.last_facing = Direction.NONE;
-// //     this.current_facing = Direction.NONE;
+// //     this.last_facing = Dir.NONE;
+// //     this.current_facing = Dir.NONE;
 // //     this.disabled = false;
 
 // //     this.score = 0;
@@ -1242,7 +1368,7 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 
 // //   move() {
 // //     // Don't attempt to move if there is NONE facing or diabled!
-// //     if (this.current_facing === Direction.NONE || this.disabled) return;
+// //     if (this.current_facing === Dir.NONE || this.disabled) return;
 
 // //     // Get coords of location we intend to move into
 // //     let next_location = addVect(this.head, dirToVect(this.current_facing));
@@ -1291,8 +1417,8 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 // //     }
 // //   }
 
-// //   setFacing(dir: Direction) {
-// //     if (dir !== opposingDirection(this.last_facing)) {
+// //   setFacing(dir: Dir) {
+// //     if (dir !== opposingDir(this.last_facing)) {
 // //       this.current_facing = dir;
 // //     }
 // //   }
@@ -1320,10 +1446,10 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
 
 // // // Snake Segment Class
 // // class SnakeSegment extends GameEndingObject {
-// //   next_segment: Direction;
+// //   next_segment: Dir;
 // //   id: number;
 
-// //   constructor(id: number, next_segment: Direction = Direction.NONE) {
+// //   constructor(id: number, next_segment: Dir = Dir.NONE) {
 // //     super();
 // //     this.next_segment = next_segment;
 // //     this.id = id;
@@ -1498,6 +1624,18 @@ function clk(e: MouseEvent) {
       SearchMap.current.openPoint(p);
     }
   }
+}
+
+// Show input error message
+function showError(message: string) {
+  error.className = "error visible";
+  error.innerText = message;
+}
+
+// Show success outline
+function errorReset() {
+  error.className = "error";
+  error.innerText = "Error Message";
 }
 
 // Handle setting
