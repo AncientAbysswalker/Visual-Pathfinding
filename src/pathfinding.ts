@@ -58,10 +58,14 @@ const resetMPBtn = document.getElementById(
 )! as HTMLButtonElement;
 
 // Sprites
+let s_start = new Image();
+let s_finish = new Image();
 let s_road = new Image();
 let s_road2 = new Image();
 let s_road3 = new Image();
 let s_road4 = new Image();
+s_start.src = "img/s_start.png";
+s_finish.src = "img/s_finish.png";
 s_road.src = "img/s_road_ul.png";
 s_road2.src = "img/s_road_ur.png";
 s_road3.src = "img/s_road_dl.png";
@@ -568,8 +572,12 @@ class SearchMap {
     }
     this.drawSearch();
 
+    this.drawTileStart();
+    this.drawTileFinish();
+
     if (this.is_complete) {
-      this.drawPath();
+      //this.drawPath();
+      this.drawArrow();
     }
   }
 
@@ -584,10 +592,6 @@ class SearchMap {
           this.drawTileRoad(toPoint(i, j));
         } else if (obj instanceof Forest) {
           this.drawTile(toPoint(i, j), "#f0f");
-        } else if (samePoint(toPoint(i, j), this.pt_start)) {
-          this.drawTile(toPoint(i, j), "#f00");
-        } else if (samePoint(toPoint(i, j), this.pt_finish)) {
-          this.drawTile(toPoint(i, j), "#0f0");
         }
       }
     }
@@ -595,7 +599,7 @@ class SearchMap {
 
   drawSearch() {
     for (let p of this.traversed) {
-      this.drawTile(p, "#ff0");
+      this.drawTile(p, "#ffff00");
     }
   }
 
@@ -605,8 +609,47 @@ class SearchMap {
     }
   }
 
+  drawArrow() {
+    let pt_arr = this.final_path;
+    ctx.strokeStyle = "red";
+    ctx.beginPath();
+    ctx.lineWidth = 4;
+    ctx.moveTo(pt_arr[0].x * 16 + 8, pt_arr[0].y * 16 + 8);
+    for (var i = 1; i < pt_arr.length; i++) {
+      ctx.lineTo(pt_arr[i].x * 16 + 8, pt_arr[i].y * 16 + 8);
+      // this.canvas_arrow(
+      //   ctx,
+      //   pt_arr[i].x * 16 + 8,
+      //   pt_arr[i].y * 16 + 8,
+      //   pt_arr[i + 1].x * 16 + 8,
+      //   pt_arr[i + 1].y * 16 + 8
+      // );
+    }
+    ctx.stroke();
+    ctx.closePath();
+    let p1 = pt_arr[pt_arr.length - 1];
+    let p2 = pt_arr[pt_arr.length - 2];
+    let headlen = 8;
+    ctx.beginPath();
+    ctx.lineWidth = 4;
+    var angle = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+    ctx.moveTo(p1.x * 16 + 8, p1.y * 16 + 8);
+    ctx.lineTo(
+      p1.x * 16 + 8 - headlen * Math.cos(angle - Math.PI / 6),
+      p1.y * 16 + 8 - headlen * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.lineTo(
+      p1.x * 16 + 8 - headlen * Math.cos(angle + Math.PI / 6),
+      p1.y * 16 + 8 - headlen * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.lineTo(p1.x * 16 + 8, p1.y * 16 + 8);
+    ctx.stroke();
+    ctx.closePath();
+  }
+
   drawTile(p: Point, color: string) {
     ctx.beginPath();
+    ctx.globalAlpha = 0.2;
     ctx.rect(
       SearchMap.tile_size * p.x,
       SearchMap.tile_size * p.y,
@@ -615,7 +658,32 @@ class SearchMap {
     );
     ctx.fillStyle = color;
     ctx.fill();
+    ctx.globalAlpha = 1;
     ctx.closePath();
+  }
+
+  drawTileStart() {
+    let p = this.pt_start;
+
+    if (p) {
+      ctx.drawImage(
+        s_start,
+        SearchMap.tile_size * p.x,
+        SearchMap.tile_size * p.y
+      );
+    }
+  }
+
+  drawTileFinish() {
+    let p = this.pt_finish;
+
+    if (p) {
+      ctx.drawImage(
+        s_finish,
+        SearchMap.tile_size * p.x,
+        SearchMap.tile_size * p.y
+      );
+    }
   }
 
   drawTileRoad(p: Point) {
