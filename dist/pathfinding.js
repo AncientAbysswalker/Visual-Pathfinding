@@ -42,8 +42,6 @@ s_road.src = "img/s_road_ul.png";
 s_road2.src = "img/s_road_ur.png";
 s_road3.src = "img/s_road_dl.png";
 s_road4.src = "img/s_road_dr.png";
-class Block {
-}
 let blankAdjacency = {
     U: false,
     UL: false,
@@ -82,6 +80,12 @@ function dirReverse(dir) {
             return Dir.UL;
     }
 }
+class Block {
+    constructor() {
+        this.adjacent = Object.assign({}, blankAdjacency);
+        this.subsprite = 0;
+    }
+}
 class Road {
     constructor() {
         this.adjacent = Object.assign({}, blankAdjacency);
@@ -91,6 +95,7 @@ class Road {
 }
 class Forest {
     constructor() {
+        this.adjacent = Object.assign({}, blankAdjacency);
         this.difficulty = 20;
         this.subsprite = 0;
     }
@@ -150,7 +155,7 @@ function stringToPoint(str) {
     };
 }
 // Convert a point object into a string
-function ptToString(p) {
+function ptToStr(p) {
     return `{x: ${p.x}, y: ${p.y}}`;
 }
 function addDimensioned(p1, p2) {
@@ -163,7 +168,7 @@ function samePoint(p1, p2) {
     return p1.x === p2.x && p1.y === p2.y;
 }
 // Return adjacent points in the 4 cardinal directions
-function adjacentPoints(p) {
+function stdAdjacencies(p) {
     return [
         addDimensioned(p, dirToVect(Dir.U)),
         addDimensioned(p, dirToVect(Dir.D)),
@@ -247,7 +252,7 @@ let SearchMap = /** @class */ (() => {
         }
         static chosenAlgo(start, finish) {
             if (SearchMap.selected_search === Search.DIJKSTRA) {
-                return new Dijkstra(ptToString(start), ptToString(finish));
+                return new Dijkstra(ptToStr(start), ptToStr(finish));
             }
         }
         // Return if the point is within the canvas
@@ -266,14 +271,14 @@ let SearchMap = /** @class */ (() => {
         }
         // Create a new adjacency list
         genAdjacency() {
-            this.adjacencyList = {};
+            this.adjacency_list = {};
             for (let i = 0; i < SearchMap.cols; i++) {
                 for (let j = 0; j < SearchMap.rows; j++) {
                     let p = toPoint(i, j);
-                    this.adjacencyList[ptToString(p)] = [];
-                    for (let p_adj of adjacentPoints(p)) {
+                    this.adjacency_list[ptToStr(p)] = [];
+                    for (let p_adj of stdAdjacencies(p)) {
                         if (SearchMap.withinCanvas(p_adj)) {
-                            this.adjacencyList[ptToString(p)].push(p_adj);
+                            this.adjacency_list[ptToStr(p)].push(p_adj);
                         }
                     }
                 }
@@ -294,56 +299,54 @@ let SearchMap = /** @class */ (() => {
         getGrid(p) {
             return this.grid[p.x][p.y];
         }
-        getAdjacent(p, dir) {
+        getAdjacentObject(p, dir) {
             let d = dirToVect(dir);
             return this.grid[p.x + d.x][p.y + d.y];
         }
         // Make a point impassible
         closePoint(p) {
             // Set point to be solid
-            if (!(this.getGrid(p) instanceof Block)) {
-                this.setGrid(p, new Block());
-                this.adjacencyList[ptToString(p)] = [];
-                // Remove entry from adjacency of adjacent points
-                for (let p_adj of adjacentPoints(p)) {
-                    if (SearchMap.withinCanvas(p_adj)) {
-                        let a = this.adjacencyList[ptToString(p_adj)];
-                        if (myIndexOf(a, p) > -1) {
-                            a.splice(myIndexOf(a, p), 1);
-                        }
+            // if (!(this.getGrid(p) instanceof Block)) {
+            // this.setGrid(p, new Block());
+            this.adjacency_list[ptToStr(p)] = [];
+            // Remove entry from adjacency of adjacent points
+            for (let p_adj of stdAdjacencies(p)) {
+                if (SearchMap.withinCanvas(p_adj)) {
+                    let a = this.adjacency_list[ptToStr(p_adj)];
+                    if (myIndexOf(a, p) > -1) {
+                        a.splice(myIndexOf(a, p), 1);
                     }
                 }
             }
         }
-        // Make a point passible
+        // }
+        // Clear position of any object
         clearPosition(p) {
             let obj = this.getGrid(p);
+            // If the position is not already clear
             if (obj !== null) {
-                this.clearAdjacencies(p);
+                // Remove dynamic tiling around this position and clear this position
+                this.clearDynamicTiling(p);
                 this.setGrid(p, null);
                 // Add entry from adjacency of adjacent points
-                this.adjacencyList[ptToString(p)] = [];
-                for (let p_adj of adjacentPoints(p)) {
+                this.adjacency_list[ptToStr(p)] = [];
+                for (let p_adj of stdAdjacencies(p)) {
                     if (SearchMap.withinCanvas(p_adj) &&
-                        !(this.grid[p_adj.x][p_adj.y] instanceof Block) // Update for solid
-                    ) {
-                        this.adjacencyList[ptToString(p)].push(p_adj);
-                        let a = this.adjacencyList[ptToString(p_adj)];
-                        // if (myIndexOf(a, p) === -1) {
-                        a.push(p);
-                        // }
+                        !(this.getGrid(p_adj) instanceof Block)) {
+                        this.adjacency_list[ptToStr(p)].push(p_adj);
+                        this.adjacency_list[ptToStr(p_adj)].push(p);
                     }
                 }
             }
         }
         // Clear any adjacencies for dynamic tiles around point p
-        clearAdjacencies(p) {
+        clearDynamicTiling(p) {
             let obj = this.getGrid(p);
             // If the object at p is a dynamic tile, clear adjacent adjacencies
             if (isDynamicTile(obj)) {
                 for (var _dir of Object.keys(Dir)) {
                     let dir = Dir[_dir];
-                    let obj_adj = this.getAdjacent(p, dir);
+                    let obj_adj = this.getAdjacentObject(p, dir);
                     // Clear adjacent adjacencies if same class
                     if (obj_adj !== null && obj.constructor === obj_adj.constructor) {
                         // @ts-ignore - Will always have property 'adjacent' given above logic
@@ -352,100 +355,68 @@ let SearchMap = /** @class */ (() => {
                 }
             }
         }
-        // Make a point a road
+        // Place a new Road tile
         placeRoad(p) {
-            // Set point to be empty
+            // If the position is not already an instance of this class
             if (!(this.getGrid(p) instanceof Road)) {
-                let new_road = new Road();
+                // Remove dynamic tiling around this position and clear this position
+                this.clearPosition(p);
+                let new_obj = new Road();
+                // Create data for dynamic tiling
                 for (var _dir of Object.keys(Dir)) {
                     let dir = Dir[_dir];
-                    // console.log(dir);
-                    // console.log(Dir[dir]);
-                    let p_adj = this.getAdjacent(p, dir);
-                    console.log(p_adj);
+                    let p_adj = this.getAdjacentObject(p, dir);
+                    // If there is an adjacent instance of this class, note this
                     if (p_adj instanceof Road) {
-                        console.log("nroad");
-                        new_road.adjacent[dir] = true;
+                        new_obj.adjacent[dir] = true;
                         p_adj.adjacent[dirReverse(dir)] = true;
                     }
-                    // @ts-ignore
-                    console.log(p_adj === null || p_adj === void 0 ? void 0 : p_adj.adjacent);
                 }
-                console.log(new_road.adjacent);
-                // new_road.adjacent.D = true;
-                // new_road.adjacent.U = true;
-                // new_road.adjacent.L = true;
-                // new_road.adjacent.R = true;
-                // adjacentPoints(p).forEach((p_adj, index) => {
-                //   if (this.grid[p_adj.x][p_adj.y] instanceof Road) {
-                //     let adder1 = 0;
-                //     let adder2 = 0;
-                //     if (index === 1) {
-                //       adder1 = 8;
-                //       adder2 = 4;
-                //     } else if (index === 0) {
-                //       adder1 = 4;
-                //       adder2 = 8;
-                //     } else if (index === 3) {
-                //       adder1 = 2;
-                //       adder2 = 1;
-                //     } else if (index === 2) {
-                //       adder1 = 1;
-                //       adder2 = 2;
-                //     }
-                //     new_road.subsprite += adder2;
-                //     // @ts-ignore
-                //     this.grid[p_adj.x][p_adj.y].subsprite += adder1;
-                //     console.log(adder1, adder2);
-                //   }
-                // });
-                //this.grid[p.x][p.y] = new_road;
-                this.setGrid(p, new_road);
-                // // Add entry from adjacency of adjacent points
-                // this.adjacencyList[ptToString(p)] = [];
-                // for (let p_adj of adjacentPoints(p)) {
-                //   if (
-                //     SearchMap.withinCanvas(p_adj) &&
-                //     !(this.grid[p_adj.x][p_adj.y] instanceof Block) // Update for solid
-                //   ) {
-                //     this.adjacencyList[ptToString(p)].push(p_adj);
-                //     let a = this.adjacencyList[ptToString(p_adj)];
-                //     // if (myIndexOf(a, p) === -1) {
-                //     a.push(p);
-                //     // }
-                //   }
-                // }
+                // Set the position with the new instance
+                this.setGrid(p, new_obj);
             }
         }
-        // Make a point a road
+        // Place a new Forest tile
         placeForest(p) {
-            // Set point to be empty
-            if (!(this.grid[p.x][p.y] instanceof Forest)) {
-                let new_forest = new Forest();
-                // adjacentPoints(p).forEach((p_adj, index) => {
-                //   if (this.grid[p_adj.x][p_adj.y] instanceof Road) {
-                //     let adder1 = 0;
-                //     let adder2 = 0;
-                //     if (index === 1) {
-                //       adder1 = 8;
-                //       adder2 = 4;
-                //     } else if (index === 0) {
-                //       adder1 = 4;
-                //       adder2 = 8;
-                //     } else if (index === 3) {
-                //       adder1 = 2;
-                //       adder2 = 1;
-                //     } else if (index === 2) {
-                //       adder1 = 1;
-                //       adder2 = 2;
-                //     }
-                //     new_forest.subsprite += adder2;
-                //     // @ts-ignore
-                //     this.grid[p_adj.x][p_adj.y].subsprite += adder1;
-                //     console.log(adder1, adder2);
-                //   }
-                // });
-                this.grid[p.x][p.y] = new_forest;
+            // If the position is not already an instance of this class
+            if (!(this.getGrid(p) instanceof Forest)) {
+                // Remove dynamic tiling around this position and clear this position
+                this.clearPosition(p);
+                let new_obj = new Forest();
+                // Create data for dynamic tiling
+                for (var _dir of Object.keys(Dir)) {
+                    let dir = Dir[_dir];
+                    let p_adj = this.getAdjacentObject(p, dir);
+                    // If there is an adjacent instance of this class, note this
+                    if (p_adj instanceof Forest) {
+                        new_obj.adjacent[dir] = true;
+                        p_adj.adjacent[dirReverse(dir)] = true;
+                    }
+                }
+                // Set the position with the new instance
+                this.setGrid(p, new_obj);
+            }
+        }
+        // Place a new Water tile
+        placeWater(p) {
+            // If the position is not already an instance of this class
+            if (!(this.getGrid(p) instanceof Block)) {
+                // Remove dynamic tiling around this position and clear this position
+                this.clearPosition(p);
+                this.closePoint(p);
+                let new_obj = new Block();
+                // Create data for dynamic tiling
+                for (var _dir of Object.keys(Dir)) {
+                    let dir = Dir[_dir];
+                    let p_adj = this.getAdjacentObject(p, dir);
+                    // If there is an adjacent instance of this class, note this
+                    if (p_adj instanceof Block) {
+                        new_obj.adjacent[dir] = true;
+                        p_adj.adjacent[dirReverse(dir)] = true;
+                    }
+                }
+                // Set the position with the new instance
+                this.setGrid(p, new_obj);
             }
         }
         static update() {
@@ -479,61 +450,63 @@ let SearchMap = /** @class */ (() => {
                 for (let j = 0; j < SearchMap.rows; j++) {
                     let obj = this.grid[i][j];
                     if (obj instanceof Block) {
-                        this.drawTile(toPoint(i, j), "#B6FDFF");
+                        this.drawTileSolidColor(toPoint(i, j), "#B6FDFF");
                     }
                     else if (obj instanceof Road) {
                         this.drawTileRoad(toPoint(i, j));
                     }
                     else if (obj instanceof Forest) {
-                        this.drawTile(toPoint(i, j), "#f0f");
+                        this.drawTileSolidColor(toPoint(i, j), "#f0f");
                     }
                 }
             }
         }
         drawSearch() {
             for (let p of this.traversed) {
-                this.drawTile(p, "#ffff00");
+                this.drawTileSolidColor(p, "#ffff00");
             }
         }
         drawPath() {
             for (let p of this.final_path) {
-                this.drawTile(p, "#f00");
+                this.drawTileSolidColor(p, "#f00");
             }
         }
         drawArrow() {
             let pt_arr = this.final_path;
-            ctx.strokeStyle = "red";
-            ctx.beginPath();
-            ctx.lineWidth = 4;
-            ctx.moveTo(pt_arr[0].x * 16 + 8, pt_arr[0].y * 16 + 8);
-            for (var i = 1; i < pt_arr.length; i++) {
-                ctx.lineTo(pt_arr[i].x * 16 + 8, pt_arr[i].y * 16 + 8);
-                // this.canvas_arrow(
-                //   ctx,
-                //   pt_arr[i].x * 16 + 8,
-                //   pt_arr[i].y * 16 + 8,
-                //   pt_arr[i + 1].x * 16 + 8,
-                //   pt_arr[i + 1].y * 16 + 8
-                // );
+            if (pt_arr.length > 1) {
+                ctx.strokeStyle = "red";
+                ctx.beginPath();
+                ctx.lineWidth = 2;
+                ctx.moveTo(pt_arr[0].x * 16 + 8, pt_arr[0].y * 16 + 8);
+                for (var i = 1; i < pt_arr.length; i++) {
+                    ctx.lineTo(pt_arr[i].x * 16 + 8, pt_arr[i].y * 16 + 8);
+                    // this.canvas_arrow(
+                    //   ctx,
+                    //   pt_arr[i].x * 16 + 8,
+                    //   pt_arr[i].y * 16 + 8,
+                    //   pt_arr[i + 1].x * 16 + 8,
+                    //   pt_arr[i + 1].y * 16 + 8
+                    // );
+                }
+                ctx.stroke();
+                ctx.closePath();
+                let p1 = pt_arr[pt_arr.length - 1];
+                let p2 = pt_arr[pt_arr.length - 2];
+                let headlen = 8;
+                ctx.beginPath();
+                ctx.lineWidth = 4;
+                var angle = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+                ctx.moveTo(p1.x * 16 + 8, p1.y * 16 + 8);
+                ctx.lineTo(p1.x * 16 + 8 - headlen * Math.cos(angle - Math.PI / 6), p1.y * 16 + 8 - headlen * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(p1.x * 16 + 8 - headlen * Math.cos(angle + Math.PI / 6), p1.y * 16 + 8 - headlen * Math.sin(angle + Math.PI / 6));
+                ctx.lineTo(p1.x * 16 + 8, p1.y * 16 + 8);
+                ctx.stroke();
+                ctx.closePath();
             }
-            ctx.stroke();
-            ctx.closePath();
-            let p1 = pt_arr[pt_arr.length - 1];
-            let p2 = pt_arr[pt_arr.length - 2];
-            let headlen = 8;
-            ctx.beginPath();
-            ctx.lineWidth = 4;
-            var angle = Math.atan2(p1.y - p2.y, p1.x - p2.x);
-            ctx.moveTo(p1.x * 16 + 8, p1.y * 16 + 8);
-            ctx.lineTo(p1.x * 16 + 8 - headlen * Math.cos(angle - Math.PI / 6), p1.y * 16 + 8 - headlen * Math.sin(angle - Math.PI / 6));
-            ctx.lineTo(p1.x * 16 + 8 - headlen * Math.cos(angle + Math.PI / 6), p1.y * 16 + 8 - headlen * Math.sin(angle + Math.PI / 6));
-            ctx.lineTo(p1.x * 16 + 8, p1.y * 16 + 8);
-            ctx.stroke();
-            ctx.closePath();
         }
-        drawTile(p, color) {
+        drawTileSolidColor(p, color) {
             ctx.beginPath();
-            ctx.globalAlpha = 0.2;
+            ctx.globalAlpha = 0.5;
             ctx.rect(SearchMap.tile_size * p.x, SearchMap.tile_size * p.y, SearchMap.tile_size, SearchMap.tile_size);
             ctx.fillStyle = color;
             ctx.fill();
@@ -584,7 +557,7 @@ class Dijkstra {
         this.start = start;
         this.finish = finish;
         //build up initial state
-        for (let vertex in SearchMap.current.adjacencyList) {
+        for (let vertex in SearchMap.current.adjacency_list) {
             if (vertex === start) {
                 this.distances[vertex] = 0;
                 this.nodes.enqueue(vertex, 0);
@@ -619,21 +592,21 @@ class Dijkstra {
                 return true;
             }
             if (this.smallest || this.distances[this.smallest] !== Infinity) {
-                for (let neighbor in SearchMap.current.adjacencyList[this.smallest]) {
+                for (let neighbor in SearchMap.current.adjacency_list[this.smallest]) {
                     //find neighboring node
-                    let nextNode = SearchMap.current.adjacencyList[this.smallest][neighbor];
+                    let nextNode = SearchMap.current.adjacency_list[this.smallest][neighbor];
                     //calculate new distance to neighboring node
                     let candidate = this.distances[this.smallest] +
                         SearchMap.current.difficulty(nextNode); //.weight;
                     console.log(candidate);
                     let nextNeighbor = nextNode;
-                    if (candidate < this.distances[ptToString(nextNeighbor)]) {
+                    if (candidate < this.distances[ptToStr(nextNeighbor)]) {
                         //updating new smallest distance to neighbor
-                        this.distances[ptToString(nextNeighbor)] = candidate;
+                        this.distances[ptToStr(nextNeighbor)] = candidate;
                         //updating previous - How we got to neighbor
-                        this.previous[ptToString(nextNeighbor)] = this.smallest;
+                        this.previous[ptToStr(nextNeighbor)] = this.smallest;
                         //enqueue in priority queue with new priority
-                        this.nodes.enqueue(ptToString(nextNeighbor), candidate);
+                        this.nodes.enqueue(ptToStr(nextNeighbor), candidate);
                     }
                 }
                 return false;
@@ -714,64 +687,10 @@ class prioNode {
         this.priority = priority;
     }
 }
-// draw() {
-//   // clear canvas
-//   ctx.clearRect(0, 0, canvas.width, canvas.height);
-//   this.drawScore();
-//   this.drawGrid();
-// }
-// Draw score on canvas
-// drawScore() {
-//   ctx.beginPath();
-//   ctx.rect(0, 0, canvas.width, Game.pixel_size * 5);
-//   ctx.fillStyle = Colors.BLUE;
-//   ctx.fill();
-//   ctx.closePath();
-//   ctx.fillStyle = Colors.WHITE;
-//   ctx.font = "20px Arial";
-//   if (!Game.isMP) {
-//     // Draw Scoring
-//     ctx.textAlign = "left";
-//     ctx.fillText(`Score: ${this.p1_snake.score}`, 30, 30);
-//     ctx.textAlign = "right";
-//     ctx.fillText(
-//       `High-Score: ${Game.highScores[Game.currentMap]}`,
-//       canvas.width - 30,
-//       30
-//     );
-//   } else {
-//     // Draw p1 square
-//     ctx.beginPath();
-//     ctx.rect(16, 18, Game.pixel_size, Game.pixel_size);
-//     ctx.fillStyle = Colors.PINK;
-//     ctx.fill();
-//     ctx.closePath();
-//     // Draw p2 square
-//     ctx.beginPath();
-//     ctx.rect(canvas.width - 26, 18, Game.pixel_size, Game.pixel_size);
-//     ctx.fillStyle = Colors.GREEN;
-//     ctx.fill();
-//     ctx.closePath();
-//     // Draw Crown
-//     if (Game.mpWins[0] > Game.mpWins[1]) {
-//       ctx.drawImage(crown, 16, 13);
-//     } else if (Game.mpWins[0] < Game.mpWins[1]) {
-//       ctx.drawImage(crown, canvas.width - 26, 13);
-//     }
-//     // Draw Scoring
-//     ctx.fillStyle = Colors.WHITE;
-//     ctx.textAlign = "left";
-//     ctx.fillText(`P1 Score: ${this.p1_snake.score}`, 30, 30);
-//     ctx.textAlign = "center";
-//     ctx.fillText(`${Game.mpWins[0]}:${Game.mpWins[1]}`, canvas.width / 2, 30);
-//     ctx.textAlign = "right";
-//     ctx.fillText(`P2 Score: ${this.p2_snake.score}`, canvas.width - 30, 30); //
-//   }
-// }
 SearchMap.newSearch();
-SearchMap.current.closePoint({ x: 1, y: 0 });
-SearchMap.current.closePoint({ x: 1, y: 1 });
-SearchMap.current.closePoint({ x: 0, y: 3 });
+// SearchMap.current.closePoint({ x: 1, y: 0 });
+// SearchMap.current.closePoint({ x: 1, y: 1 });
+// SearchMap.current.closePoint({ x: 0, y: 3 });
 function getMousePos(canvas, evt) {
     var rect = canvas.getBoundingClientRect();
     return {
@@ -779,608 +698,6 @@ function getMousePos(canvas, evt) {
         y: evt.clientY - rect.top,
     };
 }
-// // Crown :)
-// let crown = new Image();
-// crown.src = "img/crown.png";
-// // Dirality ENUM
-// enum Dir {
-//   NONE,
-//   U,
-//   D,
-//   L,
-//   R,
-// }
-// // Flip directionality
-// function opposingDir(dir: Dir): Dir {
-//   switch (dir) {
-//     case Dir.NONE:
-//       return Dir.NONE;
-//     case Dir.U:
-//       return Dir.D;
-//     case Dir.D:
-//       return Dir.U;
-//     case Dir.L:
-//       return Dir.R;
-//     case Dir.R:
-//       return Dir.L;
-//   }
-// }
-// // Convert directionality to vector
-// function dirToVect(dir: Dir): Vector {
-//   switch (dir) {
-//     case Dir.NONE:
-//       return { x: 0, y: 0 };
-//     case Dir.U:
-//       return { x: 0, y: -1 };
-//     case Dir.D:
-//       return { x: 0, y: 1 };
-//     case Dir.L:
-//       return { x: -1, y: 0 };
-//     case Dir.R:
-//       return { x: 1, y: 0 };
-//   }
-// }
-// // Interfaces
-// interface Dimensioned {
-//   x: number;
-//   y: number;
-// }
-// interface Point extends Dimensioned {}
-// interface Vector extends Dimensioned {}
-// // Convert a pair of numbers into a point object
-// function toPoint(x: number, y: number): Point {
-//   return { x: x, y: y };
-// }
-// // // Colors ENUM
-// // enum Colors {
-// //   PINK = "#ff95dd",
-// //   GREEN = "#2ecc71",
-// //   BLUE = "#0095dd",
-// //   YELLOW = "#ffcc00",
-// //   ORANGE = "#ff9900",
-// //   RED = "#ff3300",
-// //   MAGIC = "#660066",
-// //   WHITE = "#fff",
-// // }
-// // // No idea what to call this. Probability for an associated item/event
-// // type ProbSlice = { p: number; v: any };
-// // // Weighted probability function. Ensure probs add to 100% or the largest prob will scale up to make it 100%
-// // function weightedProb(...args: ProbSlice[]) {
-// //   let p_rand = Math.random();
-// //   let p_acc = 0;
-// //   args = args.sort((a, b) => a.p - b.p);
-// //   for (var i = 0; i < args.length - 1; i++) {
-// //     p_acc += args[i].p;
-// //     if (p_rand > 1 - p_acc) {
-// //       return args[i].v;
-// //     }
-// //   }
-// //   return args[args.length - 1].v;
-// // }
-// // Type describing objects that can exist in the grid
-// type GridObjects = null | boolean;
-// // Game control class object
-// class Game {
-//   // Render and update
-//   private static force_frame = false;
-//   private static readonly default_refresh_delay = 100;
-//   private static refresh_delay = 100;
-//   static readonly cols = 100;
-//   static readonly rows = 50;
-//   static readonly pixel_size = 10;
-//   static readonly header_size = 50;
-//   // Current game instance
-//   static current: Game;
-//   // Score and game-state variables
-//   static paused = false;
-//   static isMP = false;
-//   static highScores = [0, 0, 0];
-//   static mpWins = [0, 0];
-//   static currentMap = 0;
-//   // Instance variables
-//   score: number;
-//   // p1_snake: Snake;
-//   // p2_snake?: Snake;
-//   private grid: GridObjects[][];
-//   // Create a new game
-//   private constructor() {
-//     this.score = 0;
-//     this.grid = [];
-//     this.createGrid();
-//     // this.loadMap(Game.currentMap);
-//   }
-//   // Spawn a new game and set it to the class variable
-//   static newGame() {
-//     // Allow update to refresh canvas while paused
-//     Game.force_frame = true;
-//     // Set current game as new game
-//     if (!Game.current) {
-//       Game.current = new Game();
-//       Game.current.update();
-//     } else {
-//       Game.current = new Game();
-//       Game.resetGameSpeed();
-//     }
-//   }
-//   // Start a single-player game
-//   static startSPGame() {
-//     Game.isMP = false;
-//     Game.newGame();
-//   }
-//   // Start a two-player game
-//   static startMPGame() {
-//     Game.isMP = true;
-//     Game.newGame();
-//   }
-//   // Create the grid at the game start
-//   createGrid() {
-//     for (let i = 0; i < Game.cols; i++) {
-//       this.grid[i] = [];
-//       for (let j = 0; j < Game.rows; j++) {
-//         this.grid[i][j] = null;
-//       }
-//     }
-//     this.grid[1][1] = true;
-//     this.grid[5][5] = true;
-//   }
-//   // loadMap(index: number) {
-//   //   //Load map
-//   //   let load = mapDatas[index];
-//   //   // Load walls
-//   //   if (load.hasOwnProperty("walls")) {
-//   //     for (let wall of load.walls) {
-//   //       this.setObject(wall, new Wall());
-//   //     }
-//   //   }
-//   //   // Load Snake 1
-//   //   this.p1_snake = new Snake(0, load.sp1);
-//   //   this.setObject(load.sp1, new SnakeSegment(0));
-//   //   // Load Snake 2 and an additional pellet if 2 players
-//   //   if (Game.isMP) {
-//   //     this.p2_snake = new Snake(1, load.sp2);
-//   //     this.setObject(load.sp2, new SnakeSegment(1));
-//   //     this.genFoodPellet();
-//   //   }
-//   //   // Load main food pellet after walls defined
-//   //   this.genFoodPellet();
-//   // }
-//   // Spawn a new food pellet in the current game
-//   // genFoodPellet() {
-//   //   let open_p: Point[] = [];
-//   //   // Determine value of pellet
-//   //   let value = weightedProb(
-//   //     { p: 0.75, v: 5 },
-//   //     { p: 0.2, v: 10 },
-//   //     { p: 0.045, v: 25 },
-//   //     { p: 0.005, v: 100 }
-//   //   );
-//   //   // Find open locations for the new pellet and spawn
-//   //   for (let i = 0; i < Game.cols; i++) {
-//   //     for (let j = 0; j < Game.rows; j++) {
-//   //       if (this.getObject(toPoint(i, j)) === null) {
-//   //         open_p.push(toPoint(i, j));
-//   //       }
-//   //     }
-//   //   }
-//   //   let new_p = open_p[Math.floor(Math.random() * open_p.length)];
-//   //   this.setObject(new_p, new FoodPellet(value));
-//   // }
-//   // Get the object at a given coordinate
-//   getObject(p: Dimensioned): GridObjects {
-//     return this.grid[p.x][p.y];
-//   }
-//   // Set the object at a given coordinate
-//   setObject(p: Dimensioned, o: GridObjects) {
-//     this.grid[p.x][p.y] = o;
-//   }
-//   // Check if a coordinate is out of game bounds
-//   static outOfBounds(p: Point) {
-//     return p.x < 0 || p.y < 0 || p.x >= Game.cols || p.y >= Game.rows;
-//   }
-//   static increaseGameSpeed() {
-//     if (Game.refresh_delay > 0) {
-//       Game.refresh_delay *= 0.9;
-//     }
-//   }
-//   static resetGameSpeed() {
-//     Game.refresh_delay = Game.default_refresh_delay;
-//   }
-//   // Looped update of canvas drawing
-//   update() {
-//     // Draw everything
-//     // if (!Game.paused || Game.force_frame) {
-//     //   // Turn off override if needed and skip movement if so
-//     //   if (Game.force_frame) {
-//     //     Game.force_frame = false;
-//     //   } else {
-//     //     Game.current.p1_snake.move();
-//     //     if (Game.current.p2_snake) {
-//     //       Game.current.p2_snake.move();
-//     //     }
-//     //   }
-//     //   // Game.current.draw();
-//     // }
-//     // if (Game.current.isGameOver()) {
-//     //   Game.current.runGameOver();
-//     // }
-//     // Loop update with a timeout
-//     setTimeout(
-//       () => requestAnimationFrame(this.update.bind(this)),
-//       Game.refresh_delay
-//     );
-//   }
-//   static refreshScreen() {
-//     Game.force_frame = true;
-//   }
-//   // isGameOver() {
-//   //   return (
-//   //     (!Game.isMP && this.p1_snake.disabled) ||
-//   //     (Game.isMP &&
-//   //       ((this.p1_snake.disabled && this.p2_snake.disabled) ||
-//   //         (this.p1_snake.disabled &&
-//   //           this.p2_snake.score > this.p1_snake.score) ||
-//   //         (this.p2_snake.disabled &&
-//   //           this.p2_snake.score < this.p1_snake.score)))
-//   //   );
-//   // }
-//   // runGameOver() {
-//   //   // If single-player, check if new high-score is achieved
-//   //   if (!Game.isMP) {
-//   //     if (Game.highScores[Game.currentMap] < this.p1_snake.score) {
-//   //       Game.highScores[Game.currentMap] = this.p1_snake.score;
-//   //       memSaveHighScores();
-//   //     }
-//   //     Game.startSPGame();
-//   //     // If two-player, tally winner
-//   //   } else {
-//   //     if (this.p2_snake.score > this.p1_snake.score) {
-//   //       Game.mpWins[1] += 1;
-//   //       memSaveMPWins();
-//   //     } else if (this.p2_snake.score < this.p1_snake.score) {
-//   //       Game.mpWins[0] += 1;
-//   //       memSaveMPWins();
-//   //     }
-//   //     Game.startMPGame();
-//   //   }
-//   // }
-//   // // Draw everything
-//   // draw() {
-//   //   // clear canvas
-//   //   ctx.clearRect(0, 0, canvas.width, canvas.height);
-//   //   this.drawScore();
-//   //   this.drawGrid();
-//   // }
-//   // // Draw score on canvas
-//   // drawScore() {
-//   //   ctx.beginPath();
-//   //   ctx.rect(0, 0, canvas.width, Game.pixel_size * 5);
-//   //   ctx.fillStyle = Colors.BLUE;
-//   //   ctx.fill();
-//   //   ctx.closePath();
-//   //   ctx.fillStyle = Colors.WHITE;
-//   //   ctx.font = "20px Arial";
-//   //   if (!Game.isMP) {
-//   //     // Draw Scoring
-//   //     ctx.textAlign = "left";
-//   //     ctx.fillText(`Score: ${this.p1_snake.score}`, 30, 30);
-//   //     ctx.textAlign = "right";
-//   //     ctx.fillText(
-//   //       `High-Score: ${Game.highScores[Game.currentMap]}`,
-//   //       canvas.width - 30,
-//   //       30
-//   //     );
-//   //   } else {
-//   //     // Draw p1 square
-//   //     ctx.beginPath();
-//   //     ctx.rect(16, 18, Game.pixel_size, Game.pixel_size);
-//   //     ctx.fillStyle = Colors.PINK;
-//   //     ctx.fill();
-//   //     ctx.closePath();
-//   //     // Draw p2 square
-//   //     ctx.beginPath();
-//   //     ctx.rect(canvas.width - 26, 18, Game.pixel_size, Game.pixel_size);
-//   //     ctx.fillStyle = Colors.GREEN;
-//   //     ctx.fill();
-//   //     ctx.closePath();
-//   //     // Draw Crown
-//   //     if (Game.mpWins[0] > Game.mpWins[1]) {
-//   //       ctx.drawImage(crown, 16, 13);
-//   //     } else if (Game.mpWins[0] < Game.mpWins[1]) {
-//   //       ctx.drawImage(crown, canvas.width - 26, 13);
-//   //     }
-//   //     // Draw Scoring
-//   //     ctx.fillStyle = Colors.WHITE;
-//   //     ctx.textAlign = "left";
-//   //     ctx.fillText(`P1 Score: ${this.p1_snake.score}`, 30, 30);
-//   //     ctx.textAlign = "center";
-//   //     ctx.fillText(`${Game.mpWins[0]}:${Game.mpWins[1]}`, canvas.width / 2, 30);
-//   //     ctx.textAlign = "right";
-//   //     ctx.fillText(`P2 Score: ${this.p2_snake.score}`, canvas.width - 30, 30); //
-//   //   }
-//   // }
-//   // static drawTile(p: Point, color: string) {
-//   //   ctx.beginPath();
-//   //   ctx.rect(
-//   //     Game.pixel_size * p.x,
-//   //     Game.pixel_size * p.y + Game.header_size,
-//   //     Game.pixel_size,
-//   //     Game.pixel_size
-//   //   );
-//   //   ctx.fillStyle = color;
-//   //   ctx.fill();
-//   //   ctx.closePath();
-//   // }
-//   // // Draw game_grid on canvas
-//   // drawGrid() {
-//   //   for (let i = 0; i < Game.cols; i++) {
-//   //     for (let j = 0; j < Game.rows; j++) {
-//   //       let obj = this.getObject(toPoint(i, j));
-//   //       if (obj !== null) {
-//   //         if (obj instanceof SnakeSegment) {
-//   //           Game.drawTile(toPoint(i, j), Snake.color[obj.id]);
-//   //         } else if (obj instanceof FoodPellet) {
-//   //           Game.drawTile(toPoint(i, j), FoodPellet.color[obj.value]);
-//   //         } else if (obj instanceof Wall) {
-//   //           Game.drawTile(toPoint(i, j), Colors.BLUE);
-//   //         }
-//   //       }
-//   //     }
-//   //   }
-//   // }
-//   // // Player 1 Snake Controls
-//   // controlSnakes(this: Game, e: KeyboardEvent) {
-//   //   if (e.key === "Up" || e.key === "ArrowUp") {
-//   //     e.preventDefault();
-//   //     this.p1_snake.setFacing(Dir.U);
-//   //   }
-//   //   if (e.key === "Down" || e.key === "ArrowDown") {
-//   //     e.preventDefault();
-//   //     this.p1_snake.setFacing(Dir.D);
-//   //   }
-//   //   if (e.key === "Left" || e.key === "ArrowLeft") {
-//   //     e.preventDefault();
-//   //     this.p1_snake.setFacing(Dir.L);
-//   //   }
-//   //   if (e.key === "Right" || e.key === "ArrowRight") {
-//   //     e.preventDefault();
-//   //     this.p1_snake.setFacing(Dir.R);
-//   //   }
-//   //   if (this.p2_snake) {
-//   //     if (e.key === "W" || e.key === "w") {
-//   //       this.p2_snake.setFacing(Dir.U);
-//   //     }
-//   //     if (e.key === "S" || e.key === "s") {
-//   //       this.p2_snake.setFacing(Dir.D);
-//   //     }
-//   //     if (e.key === "A" || e.key === "a") {
-//   //       this.p2_snake.setFacing(Dir.L);
-//   //     }
-//   //     if (e.key === "D" || e.key === "d") {
-//   //       this.p2_snake.setFacing(Dir.R);
-//   //     }
-//   //   }
-//   // }
-// }
-// // class Snake {
-// //   head: Point;
-// //   tail: Point;
-// //   id: number;
-// //   seg_to_gen: number;
-// //   last_facing: Dir;
-// //   current_facing: Dir;
-// //   score: number;
-// //   disabled: boolean;
-// //   static color = [Colors.PINK, Colors.GREEN];
-// //   constructor(id: number, p1: Point) {
-// //     this.head = p1;
-// //     this.tail = p1;
-// //     this.id = id;
-// //     this.seg_to_gen = 5;
-// //     this.last_facing = Dir.NONE;
-// //     this.current_facing = Dir.NONE;
-// //     this.disabled = false;
-// //     this.score = 0;
-// //     //Game.current.setObject(this.head, new SnakeSegment());
-// //   }
-// //   move() {
-// //     // Don't attempt to move if there is NONE facing or diabled!
-// //     if (this.current_facing === Dir.NONE || this.disabled) return;
-// //     // Get coords of location we intend to move into
-// //     let next_location = addVect(this.head, dirToVect(this.current_facing));
-// //     // Game end condition for out-of-bounds
-// //     if (Game.outOfBounds(next_location)) {
-// //       this.disabled = true;
-// //       return;
-// //     }
-// //     // We know we are in bounds so we can get what is at the location
-// //     let grid_object = Game.current.getObject(next_location);
-// //     // Game end condition for hitting something deadly
-// //     if (grid_object instanceof GameEndingObject) {
-// //       this.disabled = true;
-// //       return;
-// //     }
-// //     // Score condition for hitting a food
-// //     if (grid_object instanceof FoodPellet) {
-// //       if (grid_object.value === 100) {
-// //         Game.resetGameSpeed();
-// //       } else {
-// //         Game.increaseGameSpeed();
-// //       }
-// //       this.score += grid_object.value;
-// //       this.seg_to_gen += grid_object.value;
-// //       Game.current.genFoodPellet();
-// //     }
-// //     // Move the snake forwards
-// //     // @ts-ignore - object at Snake.head is ALWAYS a SnakeSegment
-// //     Game.current.getObject(this.head).next_segment = this.current_facing;
-// //     Game.current.setObject(next_location, new SnakeSegment(this.id));
-// //     this.head = next_location;
-// //     this.last_facing = this.current_facing;
-// //     if (this.seg_to_gen > 0) {
-// //       this.seg_to_gen--;
-// //     } else {
-// //       let old_tail = Game.current.getObject(this.tail);
-// //       Game.current.setObject(this.tail, null);
-// //       if (old_tail instanceof SnakeSegment) {
-// //         this.tail = addVect(this.tail, dirToVect(old_tail.next_segment));
-// //       }
-// //     }
-// //   }
-// //   setFacing(dir: Dir) {
-// //     if (dir !== opposingDir(this.last_facing)) {
-// //       this.current_facing = dir;
-// //     }
-// //   }
-// // }
-// // // Food pellet class
-// // class FoodPellet {
-// //   static color: { [key: number]: string } = {
-// //     5: Colors.YELLOW,
-// //     10: Colors.ORANGE,
-// //     25: Colors.RED,
-// //     100: Colors.MAGIC,
-// //   };
-// //   value: number;
-// //   constructor(value = 5) {
-// //     this.value = value;
-// //   }
-// // }
-// // // Parent class for all objects with game-ending collision
-// // class GameEndingObject {}
-// // class Wall extends GameEndingObject {}
-// // // Snake Segment Class
-// // class SnakeSegment extends GameEndingObject {
-// //   next_segment: Dir;
-// //   id: number;
-// //   constructor(id: number, next_segment: Dir = Dir.NONE) {
-// //     super();
-// //     this.next_segment = next_segment;
-// //     this.id = id;
-// //   }
-// // }
-// // // Load local storage ad start new game
-// // memLoadMap();
-// // memLoadHighScores();
-// // memLoadMPWins();
-// // memLoadGameMode();
-// // Game.newGame();
-// // function endGame() {
-// //   Game.current.score = -1000;
-// //   Game.current.p1_snake.disabled = true;
-// // }
-// // function addVect(...vectors: Dimensioned[]) {
-// //   return vectors.reduce((a, b) => ({ x: a.x + b.x, y: a.y + b.y }));
-// // }
-// // // Load local storage for Map selection
-// // function memLoadMap() {
-// //   let _load = +localStorage.getItem("selectedMap");
-// //   if (_load !== null) {
-// //     Game.currentMap = _load;
-// //     selectMapBtn(_load);
-// //   }
-// // }
-// // // Update local storage for Map selection
-// // function memSaveMap() {
-// //   localStorage.setItem("selectedMap", Game.currentMap.toString());
-// // }
-// // // Load local storage for Map selection
-// // function memLoadGameMode() {
-// //   let _load = JSON.parse(localStorage.getItem("gameMode"));
-// //   if (_load !== null) {
-// //     Game.isMP = _load;
-// //     if (_load) {
-// //       selectMPBtn();
-// //     } else {
-// //       selectSPBtn();
-// //     }
-// //   }
-// // }
-// // // Update local storage for Map selection
-// // function memSaveGameMode() {
-// //   localStorage.setItem("gameMode", JSON.stringify(Game.isMP));
-// // }
-// // // Load local storage for high-scores
-// // function memLoadHighScores() {
-// //   let _load = JSON.parse(localStorage.getItem("highScores"));
-// //   if (_load !== null) {
-// //     Game.highScores = _load;
-// //   }
-// // }
-// // // Update local storage for high-scores
-// // function memSaveHighScores() {
-// //   localStorage.setItem("highScores", JSON.stringify(Game.highScores));
-// // }
-// // // Reset local storage for high-scores
-// // function memResetHighScores() {
-// //   Game.highScores = [0, 0, 0];
-// //   memSaveHighScores();
-// //   Game.refreshScreen();
-// // }
-// // // Load local storage for multiplayer scores
-// // function memLoadMPWins() {
-// //   let _load = JSON.parse(localStorage.getItem("mpWins"));
-// //   if (_load !== null) {
-// //     Game.mpWins = _load;
-// //   }
-// // }
-// // // Update local storage for multiplayer scores
-// // function memSaveMPWins() {
-// //   localStorage.setItem("mpWins", JSON.stringify(Game.mpWins));
-// // }
-// // // Reset local storage for multiplayer scores
-// // function memResetMPWins() {
-// //   Game.mpWins = [0, 0];
-// //   memSaveMPWins();
-// //   Game.refreshScreen();
-// // }
-// // // Keyboard event handlers for snake movement
-// // document.addEventListener("keydown", (e) => {
-// //   Game.current.controlSnakes(e);
-// // });
-// // // Toggle the CSS for the associated button and set the internal variable
-// // function selectMapBtn(n: number) {
-// //   for (let btn of mapBtns) {
-// //     btn.classList.remove("selected");
-// //   }
-// //   mapBtns[n].classList.add("selected");
-// //   Game.currentMap = n;
-// // }
-// // // Map selection event handlers
-// // map0Btn.addEventListener("click", () => {
-// //   selectMapBtn(0);
-// //   memSaveMap();
-// //   Game.newGame();
-// // });
-// // map1Btn.addEventListener("click", () => {
-// //   selectMapBtn(1);
-// //   memSaveMap();
-// //   Game.newGame();
-// // });
-// // map2Btn.addEventListener("click", () => {
-// //   selectMapBtn(2);
-// //   memSaveMap();
-// //   Game.newGame();
-// // });
-// // // Toggle the CSS for the associated button and set the internal variable
-// // function selectSPBtn() {
-// //   mpBtn.classList.remove("selected");
-// //   spBtn.classList.add("selected");
-// // }
-// // function selectMPBtn() {
-// //   spBtn.classList.remove("selected");
-// //   mpBtn.classList.add("selected");
-// // }
-// // // Game mode selection event handlers
-// // spBtn.addEventListener("click", () => {
-// //   selectSPBtn();
-// //   Game.startSPGame();
-// //   memSaveGameMode();
-// // });
-// // mpBtn.addEventListener("click", () => {
-// //   selectMPBtn();
-// //   Game.startMPGame();
-// //   memSaveGameMode();
-// // });
 function clk(e) {
     if (!SearchMap.current.start_search) {
         let pos = getMousePos(canvas, e);
@@ -1389,7 +706,7 @@ function clk(e) {
         if (e.buttons == 1 || e.buttons == 3) {
             if (SearchMap.withinCanvas(p)) {
                 if (SearchMap.tooltip === Tooltip.BLOCK)
-                    SearchMap.current.closePoint(p);
+                    SearchMap.current.placeWater(p);
                 if (SearchMap.tooltip === Tooltip.ERASE)
                     SearchMap.current.clearPosition(p);
                 if (SearchMap.tooltip === Tooltip.ROAD)
@@ -1431,13 +748,6 @@ canvas.addEventListener("mousedown", (e) => {
 canvas.addEventListener("contextmenu", (e) => {
     e.preventDefault();
 });
-// // // Reset Scores event handlers
-// // resetSPBtn.addEventListener("click", () => {
-// //   memResetHighScores();
-// // });
-// // resetMPBtn.addEventListener("click", () => {
-// //   memResetMPWins();
-// // });
 // Tooltip Buttons
 ttStartBtn.addEventListener("click", () => {
     SearchMap.tooltip = Tooltip.START;
@@ -1461,7 +771,7 @@ newSearchBtn.addEventListener("click", () => {
 // Run Search Button
 runSearchBtn.addEventListener("click", () => {
     SearchMap.current.runSearch();
-    console.log(SearchMap.current.adjacencyList);
+    console.log(SearchMap.current.adjacency_list);
 });
 // Clear Search Button
 clearSearchBtn.addEventListener("click", () => {
