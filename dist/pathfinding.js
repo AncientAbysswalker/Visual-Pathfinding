@@ -54,6 +54,14 @@ let blankAdjacency = {
     R: false,
     UR: false,
 };
+function isDynamicTile(o) {
+    if (o !== null) {
+        return o.hasOwnProperty("adjacent");
+    }
+    else {
+        return false;
+    }
+}
 function dirReverse(dir) {
     switch (dir) {
         case Dir.U:
@@ -308,10 +316,11 @@ let SearchMap = /** @class */ (() => {
             }
         }
         // Make a point passible
-        openPoint(p) {
-            // Set point to be empty
-            if (this.grid[p.x][p.y] !== null) {
-                this.grid[p.x][p.y] = null;
+        clearPosition(p) {
+            let obj = this.getGrid(p);
+            if (obj !== null) {
+                this.clearAdjacencies(p);
+                this.setGrid(p, null);
                 // Add entry from adjacency of adjacent points
                 this.adjacencyList[ptToString(p)] = [];
                 for (let p_adj of adjacentPoints(p)) {
@@ -323,6 +332,22 @@ let SearchMap = /** @class */ (() => {
                         // if (myIndexOf(a, p) === -1) {
                         a.push(p);
                         // }
+                    }
+                }
+            }
+        }
+        // Clear any adjacencies for dynamic tiles around point p
+        clearAdjacencies(p) {
+            let obj = this.getGrid(p);
+            // If the object at p is a dynamic tile, clear adjacent adjacencies
+            if (isDynamicTile(obj)) {
+                for (var _dir of Object.keys(Dir)) {
+                    let dir = Dir[_dir];
+                    let obj_adj = this.getAdjacent(p, dir);
+                    // Clear adjacent adjacencies if same class
+                    if (obj_adj !== null && obj.constructor === obj_adj.constructor) {
+                        // @ts-ignore - Will always have property 'adjacent' given above logic
+                        obj_adj.adjacent[dirReverse(dir)] = false;
                     }
                 }
             }
@@ -1366,7 +1391,7 @@ function clk(e) {
                 if (SearchMap.tooltip === Tooltip.BLOCK)
                     SearchMap.current.closePoint(p);
                 if (SearchMap.tooltip === Tooltip.ERASE)
-                    SearchMap.current.openPoint(p);
+                    SearchMap.current.clearPosition(p);
                 if (SearchMap.tooltip === Tooltip.ROAD)
                     SearchMap.current.placeRoad(p);
                 if (SearchMap.tooltip === Tooltip.FOREST)
@@ -1380,7 +1405,7 @@ function clk(e) {
             }
         }
         else if (e.buttons == 2) {
-            SearchMap.current.openPoint(p);
+            SearchMap.current.clearPosition(p);
         }
     }
 }
