@@ -32,16 +32,16 @@ const resetMPBtn = document.getElementById("reset-mp-score-btn");
 // Sprites
 let s_start = new Image();
 let s_finish = new Image();
-let s_road = new Image();
-let s_road2 = new Image();
-let s_road3 = new Image();
-let s_road4 = new Image();
+let s_road = [new Image(), new Image(), new Image(), new Image()];
+s_road[0].src = "img/s_road_ul.png";
+s_road[1].src = "img/s_road_ur.png";
+s_road[2].src = "img/s_road_dr.png";
+s_road[3].src = "img/s_road_dl.png";
+// let s_road2 = new Image();
+// let s_road3 = new Image();
+// let s_road4 = new Image();
 s_start.src = "img/s_start.png";
 s_finish.src = "img/s_finish.png";
-s_road.src = "img/s_road_ul.png";
-s_road2.src = "img/s_road_ur.png";
-s_road3.src = "img/s_road_dl.png";
-s_road4.src = "img/s_road_dr.png";
 let blankAdjacency = {
     U: false,
     UL: false,
@@ -122,6 +122,17 @@ var Dir;
     Dir["DL"] = "DL";
     Dir["DR"] = "DR";
 })(Dir || (Dir = {}));
+// dynamic_tile_encode
+let dynamic_tile_encode = [
+    Dir.L,
+    Dir.UL,
+    Dir.U,
+    Dir.UR,
+    Dir.R,
+    Dir.DR,
+    Dir.D,
+    Dir.DL,
+];
 // Convert directionality to vector
 function dirToVect(dir) {
     switch (dir) {
@@ -285,7 +296,7 @@ let SearchMap = /** @class */ (() => {
             }
         }
         difficulty(p) {
-            let obj = this.grid[p.x][p.y];
+            let obj = this.getGrid(p);
             if (obj === null) {
                 return 10;
             }
@@ -525,15 +536,21 @@ let SearchMap = /** @class */ (() => {
                 ctx.drawImage(s_finish, SearchMap.tile_size * p.x, SearchMap.tile_size * p.y);
             }
         }
+        // Draw a road tile
         drawTileRoad(p) {
-            // @ts-ignore - Will always be instance of Road()
             let obj = this.getGrid(p);
-            // let subsprite =
-            //   +obj.adjacent.L + 2 * +obj.adjacent.UL + 4 * +obj.adjacent.U; //this.grid[p.x][p.y].subsprite;
-            ctx.drawImage(s_road, 8 * (+obj.adjacent.L + 2 * +obj.adjacent.UL + 4 * +obj.adjacent.U), 0, 8, 8, SearchMap.tile_size * p.x, SearchMap.tile_size * p.y, SearchMap.tile_size / 2, SearchMap.tile_size / 2);
-            ctx.drawImage(s_road2, 8 * (+obj.adjacent.U + 2 * +obj.adjacent.UR + 4 * +obj.adjacent.R), 0, 8, 8, 8 + SearchMap.tile_size * p.x, SearchMap.tile_size * p.y, SearchMap.tile_size / 2, SearchMap.tile_size / 2);
-            ctx.drawImage(s_road3, 8 * (+obj.adjacent.D + 2 * +obj.adjacent.DL + 4 * +obj.adjacent.L), 0, 8, 8, SearchMap.tile_size * p.x, 8 + SearchMap.tile_size * p.y, SearchMap.tile_size / 2, SearchMap.tile_size / 2);
-            ctx.drawImage(s_road4, 8 * (+obj.adjacent.R + 2 * +obj.adjacent.DR + 4 * +obj.adjacent.D), 0, 8, 8, 8 + SearchMap.tile_size * p.x, 8 + SearchMap.tile_size * p.y, SearchMap.tile_size / 2, SearchMap.tile_size / 2);
+            // Draw the four sub-sprites making up the whole
+            for (var i = 0; i < 4; i++) {
+                // Shift values to align the subsprite in the whole
+                let shift_subsprite_x = i % 3 !== 0 ? 8 : 0;
+                let shift_subsprite_y = i >= 2 ? 8 : 0;
+                // Draw subsprite
+                ctx.drawImage(s_road[i], (SearchMap.tile_size / 2) *
+                    (+obj.adjacent[dynamic_tile_encode[2 * i + 0]] +
+                        2 * +obj.adjacent[dynamic_tile_encode[2 * i + 1]] +
+                        4 * +obj.adjacent[dynamic_tile_encode[(2 * i + 2) % 8]]), // See git for explanation
+                0, SearchMap.tile_size / 2, SearchMap.tile_size / 2, shift_subsprite_x + SearchMap.tile_size * p.x, shift_subsprite_y + SearchMap.tile_size * p.y, SearchMap.tile_size / 2, SearchMap.tile_size / 2);
+            }
         }
     }
     SearchMap.tile_size = 16;
@@ -688,6 +705,7 @@ class prioNode {
     }
 }
 SearchMap.newSearch();
+console.log(Object.keys(Dir));
 // SearchMap.current.closePoint({ x: 1, y: 0 });
 // SearchMap.current.closePoint({ x: 1, y: 1 });
 // SearchMap.current.closePoint({ x: 0, y: 3 });
