@@ -32,6 +32,8 @@ const ttButtons = {
     forest: ttForestBtn,
     road: ttRoadBtn,
 };
+// Search drop down element
+const searchDropDown = document.getElementById("searchDropDown");
 const error = document.getElementById("error");
 // Reset Scores Button Elements
 const resetSPBtn = document.getElementById("reset-sp-score-btn");
@@ -210,7 +212,17 @@ var Search;
 (function (Search) {
     Search["DIJKSTRA"] = "Dijkstra";
     Search["ASTAR"] = "A*";
+    Search["GBFS"] = "Greedy BFS";
 })(Search || (Search = {}));
+//searchDropDown
+function populateSearchList() {
+    for (var search of Object.values(Search)) {
+        var el = document.createElement("option");
+        el.textContent = search;
+        el.value = search;
+        searchDropDown.appendChild(el);
+    }
+}
 let SearchMap = /** @class */ (() => {
     class SearchMap {
         // Constructor
@@ -712,7 +724,9 @@ class priorityNode {
         this.priority = priority;
     }
 }
+// JS Main
 SearchMap.newSearch();
+populateSearchList();
 function getMousePos(canvas, evt) {
     var rect = canvas.getBoundingClientRect();
     return {
@@ -797,6 +811,10 @@ ttRoadBtn.addEventListener("click", () => {
 ttForestBtn.addEventListener("click", () => {
     selectMapBtn("forest");
     SearchMap.tooltip = Tooltip.FOREST;
+});
+// Select Search
+searchDropDown.addEventListener("change", (e) => {
+    SearchMap.selected_search = searchDropDown.value;
 });
 // New Search Button
 newSearchBtn.addEventListener("click", () => {

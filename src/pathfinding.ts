@@ -54,6 +54,11 @@ const ttButtons = {
   road: ttRoadBtn,
 };
 
+// Search drop down element
+const searchDropDown = document.getElementById(
+  "searchDropDown"
+)! as HTMLSelectElement;
+
 const error = document.getElementById("error")! as HTMLElement;
 
 // Reset Scores Button Elements
@@ -299,6 +304,17 @@ enum Tooltip {
 enum Search {
   DIJKSTRA = "Dijkstra",
   ASTAR = "A*",
+  GBFS = "Greedy BFS",
+}
+
+//searchDropDown
+function populateSearchList() {
+  for (var search of Object.values(Search)) {
+    var el = document.createElement("option");
+    el.textContent = search;
+    el.value = search;
+    searchDropDown.appendChild(el);
+  }
 }
 
 class SearchMap {
@@ -910,7 +926,9 @@ class priorityNode {
   }
 }
 
+// JS Main
 SearchMap.newSearch();
+populateSearchList();
 
 function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
   var rect = canvas.getBoundingClientRect();
@@ -1008,6 +1026,10 @@ ttForestBtn.addEventListener("click", () => {
   SearchMap.tooltip = Tooltip.FOREST;
 });
 
+// Select Search
+searchDropDown.addEventListener("change", (e) => {
+  SearchMap.selected_search = searchDropDown.value as Search;
+});
 // New Search Button
 newSearchBtn.addEventListener("click", () => {
   SearchMap.newSearch();

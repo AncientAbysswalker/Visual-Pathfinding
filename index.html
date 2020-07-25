@@ -9,57 +9,90 @@
   </head>
   <body>
     <h1>SNEK: Adventures of the Danger Noodle</h1>
-    <div>
-      <div class="toolbar">
-        <div>
-          <img
-            id="new-search-btn"
-            src="img/btn_bomb.png"
-            alt="bomb"
-            class="tt_btn"
-          />
-          <img
-            id="tt-start-btn"
-            src="img/btn_start.png"
-            alt="start"
-            class="tt_btn selectable"
-          />
-          <img
-            id="tt-finish-btn"
-            src="img/btn_finish.png"
-            alt="finish"
-            class="tt_btn selectable"
-          />
-          <img
-            id="tt-block-btn"
-            src="img/btn_water.png"
-            alt="water"
-            class="tt_btn selectable selected"
-          />
-          <img
-            id="tt-road-btn"
-            src="img/btn_road.png"
-            alt="road"
-            class="tt_btn selectable"
-          />
-          <img
-            id="tt-forest-btn"
-            src="img/btn_forest.png"
-            alt="forest"
-            class="tt_btn selectable"
-          />
-          <img
-            id="run-search-btn"
-            src="img/btn_run.png"
-            alt="run"
-            class="tt_btn"
-          />
-          <img
-            id="clear-search-btn"
-            src="img/btn_reset.png"
-            alt="reset"
-            class="tt_btn"
-          />
+    <div class="map-container">
+      <div class="">
+        <div class="sparky">
+          <div class="toolbar-section">
+            <p>No section here</p>
+          </div>
+          <div class="toolbar-section">
+            <p>Tooltips</p>
+            <img
+              id="tt-start-btn"
+              src="img/btn_start.png"
+              alt="start"
+              class="tt_btn selectable"
+            />
+            <img
+              id="tt-finish-btn"
+              src="img/btn_finish.png"
+              alt="finish"
+              class="tt_btn selectable"
+            />
+            <img
+              id="tt-block-btn"
+              src="img/btn_water.png"
+              alt="water"
+              class="tt_btn selectable selected"
+            />
+            <img
+              id="tt-road-btn"
+              src="img/btn_road.png"
+              alt="road"
+              class="tt_btn selectable"
+            />
+            <img
+              id="tt-forest-btn"
+              src="img/btn_forest.png"
+              alt="forest"
+              class="tt_btn selectable"
+            />
+
+            <div class="sliders">
+              <input
+                type="range"
+                min="2"
+                max="10"
+                value="6"
+                class="slider"
+                id="myRange"
+              />
+              <input
+                type="range"
+                min="2"
+                max="10"
+                value="6"
+                class="slider"
+                id="myRange2"
+              />
+            </div>
+          </div>
+
+          <div class="toolbar-section">
+            <p>Search</p>
+            <select id="searchDropDown">
+              <!-- Options to be populated from TS code -->
+            </select>
+            <img
+              id="run-search-btn"
+              src="img/btn_run.png"
+              alt="run"
+              class="tt_btn"
+            />
+            <img
+              id="clear-search-btn"
+              src="img/btn_reset.png"
+              alt="reset"
+              class="tt_btn"
+            />
+            <span class="space"></span>
+            <img
+              id="new-search-btn"
+              src="img/btn_bomb.png"
+              alt="bomb"
+              class="tt_btn"
+            />
+          </div>
         </div>
         <small id="error" class="error">Error Message</small>
         <canvas id="canvas" width="1600" height="800"></canvas>
