@@ -46,6 +46,13 @@ const ttRoadBtn = document.getElementById("tt-road-btn")! as HTMLButtonElement;
 const ttForestBtn = document.getElementById(
   "tt-forest-btn"
 )! as HTMLButtonElement;
+const ttButtons = {
+  start: ttStartBtn,
+  finish: ttFinishBtn,
+  water: ttBlockBtn,
+  forest: ttForestBtn,
+  road: ttRoadBtn,
+};
 
 const error = document.getElementById("error")! as HTMLElement;
 
@@ -73,7 +80,7 @@ function newTile(sprite_name: string) {
   return img;
 }
 
-// Sprites
+// Define Sprites
 let s_start = newTile("s_start");
 let s_finish = newTile("s_finish");
 let s_road = newTile("s_road");
@@ -178,19 +185,7 @@ class Forest implements ReducedDifficulty, HasSpriteSheet, DynamicTiling {
   }
 }
 
-// let grid: GridObjects[][];
-
-// grid = [];
-// for (let i = 0; i < 8; i++) {
-//   grid[i] = [];
-//   for (let j = 0; j < 8; j++) {
-//     grid[i][j] = null;
-//   }
-// }
-// grid[1][1] = true;
-// grid[5][5] = true;
-
-// Dirality ENUM
+// Directionality ENUM
 enum Dir {
   U = "U",
   D = "D",
@@ -841,13 +836,13 @@ class Dijkstra {
 }
 
 class PriorityQueue {
-  values: prioNode[];
+  values: priorityNode[];
 
   constructor() {
     this.values = [];
   }
   enqueue(val: string, priority: number) {
-    let newNode = new prioNode(val, priority);
+    let newNode = new priorityNode(val, priority);
     this.values.push(newNode);
     this.bubbleUp();
   }
@@ -905,7 +900,7 @@ class PriorityQueue {
   }
 }
 
-class prioNode {
+class priorityNode {
   val: Point;
   priority: number;
 
@@ -916,10 +911,6 @@ class prioNode {
 }
 
 SearchMap.newSearch();
-console.log(Object.keys(Dir));
-// SearchMap.current.closePoint({ x: 1, y: 0 });
-// SearchMap.current.closePoint({ x: 1, y: 1 });
-// SearchMap.current.closePoint({ x: 0, y: 3 });
 
 function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
   var rect = canvas.getBoundingClientRect();
@@ -987,20 +978,33 @@ canvas.addEventListener("contextmenu", (e) => {
   e.preventDefault();
 });
 
+// Toggle the CSS for the associated button and set the internal variable
+function selectMapBtn(key: string) {
+  for (let btn of Object.values(ttButtons)) {
+    btn.classList.remove("selected");
+  }
+  ttButtons[key].classList.add("selected");
+}
+
 // Tooltip Buttons
 ttStartBtn.addEventListener("click", () => {
+  selectMapBtn("start");
   SearchMap.tooltip = Tooltip.START;
 });
 ttFinishBtn.addEventListener("click", () => {
+  selectMapBtn("finish");
   SearchMap.tooltip = Tooltip.FINISH;
 });
 ttBlockBtn.addEventListener("click", () => {
+  selectMapBtn("water");
   SearchMap.tooltip = Tooltip.BLOCK;
 });
 ttRoadBtn.addEventListener("click", () => {
+  selectMapBtn("road");
   SearchMap.tooltip = Tooltip.ROAD;
 });
 ttForestBtn.addEventListener("click", () => {
+  selectMapBtn("forest");
   SearchMap.tooltip = Tooltip.FOREST;
 });
 

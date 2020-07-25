@@ -25,6 +25,13 @@ const ttFinishBtn = document.getElementById("tt-finish-btn");
 const ttBlockBtn = document.getElementById("tt-block-btn");
 const ttRoadBtn = document.getElementById("tt-road-btn");
 const ttForestBtn = document.getElementById("tt-forest-btn");
+const ttButtons = {
+    start: ttStartBtn,
+    finish: ttFinishBtn,
+    water: ttBlockBtn,
+    forest: ttForestBtn,
+    road: ttRoadBtn,
+};
 const error = document.getElementById("error");
 // Reset Scores Button Elements
 const resetSPBtn = document.getElementById("reset-sp-score-btn");
@@ -41,7 +48,7 @@ function newTile(sprite_name) {
     // Return complete image
     return img;
 }
-// Sprites
+// Define Sprites
 let s_start = newTile("s_start");
 let s_finish = newTile("s_finish");
 let s_road = newTile("s_road");
@@ -105,17 +112,7 @@ class Forest {
         this.subsprite = 0;
     }
 }
-// let grid: GridObjects[][];
-// grid = [];
-// for (let i = 0; i < 8; i++) {
-//   grid[i] = [];
-//   for (let j = 0; j < 8; j++) {
-//     grid[i][j] = null;
-//   }
-// }
-// grid[1][1] = true;
-// grid[5][5] = true;
-// Dirality ENUM
+// Directionality ENUM
 var Dir;
 (function (Dir) {
     Dir["U"] = "U";
@@ -653,7 +650,7 @@ class PriorityQueue {
         this.values = [];
     }
     enqueue(val, priority) {
-        let newNode = new prioNode(val, priority);
+        let newNode = new priorityNode(val, priority);
         this.values.push(newNode);
         this.bubbleUp();
     }
@@ -709,17 +706,13 @@ class PriorityQueue {
         }
     }
 }
-class prioNode {
+class priorityNode {
     constructor(val, priority) {
         this.val = val;
         this.priority = priority;
     }
 }
 SearchMap.newSearch();
-console.log(Object.keys(Dir));
-// SearchMap.current.closePoint({ x: 1, y: 0 });
-// SearchMap.current.closePoint({ x: 1, y: 1 });
-// SearchMap.current.closePoint({ x: 0, y: 3 });
 function getMousePos(canvas, evt) {
     var rect = canvas.getBoundingClientRect();
     return {
@@ -777,20 +770,32 @@ canvas.addEventListener("mousedown", (e) => {
 canvas.addEventListener("contextmenu", (e) => {
     e.preventDefault();
 });
+// Toggle the CSS for the associated button and set the internal variable
+function selectMapBtn(key) {
+    for (let btn of Object.values(ttButtons)) {
+        btn.classList.remove("selected");
+    }
+    ttButtons[key].classList.add("selected");
+}
 // Tooltip Buttons
 ttStartBtn.addEventListener("click", () => {
+    selectMapBtn("start");
     SearchMap.tooltip = Tooltip.START;
 });
 ttFinishBtn.addEventListener("click", () => {
+    selectMapBtn("finish");
     SearchMap.tooltip = Tooltip.FINISH;
 });
 ttBlockBtn.addEventListener("click", () => {
+    selectMapBtn("water");
     SearchMap.tooltip = Tooltip.BLOCK;
 });
 ttRoadBtn.addEventListener("click", () => {
+    selectMapBtn("road");
     SearchMap.tooltip = Tooltip.ROAD;
 });
 ttForestBtn.addEventListener("click", () => {
+    selectMapBtn("forest");
     SearchMap.tooltip = Tooltip.FOREST;
 });
 // New Search Button

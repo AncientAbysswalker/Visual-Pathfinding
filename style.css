@@ -164,3 +164,13 @@ canvas {
 .error.visible {
   visibility: visible;
 }
+
+.toolbar {
+  text-align: center;
+  background-color: red;
+}
+
+.tt_btn {
+  width: 50px;
+  border-radius: 5px;
+}
