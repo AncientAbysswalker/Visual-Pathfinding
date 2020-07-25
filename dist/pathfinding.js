@@ -29,20 +29,24 @@ const error = document.getElementById("error");
 // Reset Scores Button Elements
 const resetSPBtn = document.getElementById("reset-sp-score-btn");
 const resetMPBtn = document.getElementById("reset-mp-score-btn");
+// Concat the path for sprite images
+function spritePath(sprite_name) {
+    return `img/${sprite_name}.png`;
+}
+// Create a new tile and set the source
+function newTile(sprite_name) {
+    let img = new Image();
+    // Define source
+    img.src = spritePath(sprite_name);
+    // Return complete image
+    return img;
+}
 // Sprites
-let s_start = new Image();
-let s_finish = new Image();
-let s_road = [new Image(), new Image(), new Image(), new Image()];
-s_road[0].src = "img/s_road_ul.png";
-s_road[1].src = "img/s_road_ur.png";
-s_road[2].src = "img/s_road_dr.png";
-s_road[3].src = "img/s_road_dl.png";
-// let s_road2 = new Image();
-// let s_road3 = new Image();
-// let s_road4 = new Image();
-s_start.src = "img/s_start.png";
-s_finish.src = "img/s_finish.png";
-let blankAdjacency = {
+let s_start = newTile("s_start");
+let s_finish = newTile("s_finish");
+let s_road = newTile("s_road");
+// Blank object for dynamic tiling data
+let blankTilingAdjacency = {
     U: false,
     UL: false,
     L: false,
@@ -52,6 +56,7 @@ let blankAdjacency = {
     R: false,
     UR: false,
 };
+//
 function isDynamicTile(o) {
     if (o !== null) {
         return o.hasOwnProperty("adjacent");
@@ -82,20 +87,20 @@ function dirReverse(dir) {
 }
 class Block {
     constructor() {
-        this.adjacent = Object.assign({}, blankAdjacency);
+        this.adjacent = Object.assign({}, blankTilingAdjacency);
         this.subsprite = 0;
     }
 }
 class Road {
     constructor() {
-        this.adjacent = Object.assign({}, blankAdjacency);
+        this.adjacent = Object.assign({}, blankTilingAdjacency);
         this.difficulty = 1;
         this.subsprite = 0;
     }
 }
 class Forest {
     constructor() {
-        this.adjacent = Object.assign({}, blankAdjacency);
+        this.adjacent = Object.assign({}, blankTilingAdjacency);
         this.difficulty = 20;
         this.subsprite = 0;
     }
@@ -310,7 +315,7 @@ let SearchMap = /** @class */ (() => {
         getGrid(p) {
             return this.grid[p.x][p.y];
         }
-        getAdjacentObject(p, dir) {
+        getGridAdjacent(p, dir) {
             let d = dirToVect(dir);
             return this.grid[p.x + d.x][p.y + d.y];
         }
@@ -357,7 +362,7 @@ let SearchMap = /** @class */ (() => {
             if (isDynamicTile(obj)) {
                 for (var _dir of Object.keys(Dir)) {
                     let dir = Dir[_dir];
-                    let obj_adj = this.getAdjacentObject(p, dir);
+                    let obj_adj = this.getGridAdjacent(p, dir);
                     // Clear adjacent adjacencies if same class
                     if (obj_adj !== null && obj.constructor === obj_adj.constructor) {
                         // @ts-ignore - Will always have property 'adjacent' given above logic
@@ -376,7 +381,7 @@ let SearchMap = /** @class */ (() => {
                 // Create data for dynamic tiling
                 for (var _dir of Object.keys(Dir)) {
                     let dir = Dir[_dir];
-                    let p_adj = this.getAdjacentObject(p, dir);
+                    let p_adj = this.getGridAdjacent(p, dir);
                     // If there is an adjacent instance of this class, note this
                     if (p_adj instanceof Road) {
                         new_obj.adjacent[dir] = true;
@@ -397,7 +402,7 @@ let SearchMap = /** @class */ (() => {
                 // Create data for dynamic tiling
                 for (var _dir of Object.keys(Dir)) {
                     let dir = Dir[_dir];
-                    let p_adj = this.getAdjacentObject(p, dir);
+                    let p_adj = this.getGridAdjacent(p, dir);
                     // If there is an adjacent instance of this class, note this
                     if (p_adj instanceof Forest) {
                         new_obj.adjacent[dir] = true;
@@ -419,7 +424,7 @@ let SearchMap = /** @class */ (() => {
                 // Create data for dynamic tiling
                 for (var _dir of Object.keys(Dir)) {
                     let dir = Dir[_dir];
-                    let p_adj = this.getAdjacentObject(p, dir);
+                    let p_adj = this.getGridAdjacent(p, dir);
                     // If there is an adjacent instance of this class, note this
                     if (p_adj instanceof Block) {
                         new_obj.adjacent[dir] = true;
@@ -439,6 +444,7 @@ let SearchMap = /** @class */ (() => {
             var _a;
             // clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Draw the grid
             this.drawGrid();
             if (!this.is_complete && this.start_search) {
                 this.cycle_step++;
@@ -447,12 +453,14 @@ let SearchMap = /** @class */ (() => {
                     this.cycle_step = 0;
                 }
             }
+            // Draw the progressive search on top of the grid
             this.drawSearch();
+            // Draw start/finish on top
             this.drawTileStart();
             this.drawTileFinish();
+            // Draw any completed search on top
             if (this.is_complete) {
-                //this.drawPath();
-                this.drawArrow();
+                this.drawShortestPath();
             }
         }
         // Draw game_grid on canvas
@@ -477,12 +485,12 @@ let SearchMap = /** @class */ (() => {
                 this.drawTileSolidColor(p, "#ffff00");
             }
         }
-        drawPath() {
+        draw222Path() {
             for (let p of this.final_path) {
                 this.drawTileSolidColor(p, "#f00");
             }
         }
-        drawArrow() {
+        drawShortestPath() {
             let pt_arr = this.final_path;
             if (pt_arr.length > 1) {
                 ctx.strokeStyle = "red";
@@ -515,6 +523,7 @@ let SearchMap = /** @class */ (() => {
                 ctx.closePath();
             }
         }
+        // Draw a tile of solid color
         drawTileSolidColor(p, color) {
             ctx.beginPath();
             ctx.globalAlpha = 0.5;
@@ -524,12 +533,14 @@ let SearchMap = /** @class */ (() => {
             ctx.globalAlpha = 1;
             ctx.closePath();
         }
+        // Draw the start tile
         drawTileStart() {
             let p = this.pt_start;
             if (p) {
                 ctx.drawImage(s_start, SearchMap.tile_size * p.x, SearchMap.tile_size * p.y);
             }
         }
+        // Draw the finish tile
         drawTileFinish() {
             let p = this.pt_finish;
             if (p) {
@@ -545,11 +556,11 @@ let SearchMap = /** @class */ (() => {
                 let shift_subsprite_x = i % 3 !== 0 ? 8 : 0;
                 let shift_subsprite_y = i >= 2 ? 8 : 0;
                 // Draw subsprite
-                ctx.drawImage(s_road[i], (SearchMap.tile_size / 2) *
+                ctx.drawImage(s_road, (SearchMap.tile_size / 2) *
                     (+obj.adjacent[dynamic_tile_encode[2 * i + 0]] +
                         2 * +obj.adjacent[dynamic_tile_encode[2 * i + 1]] +
                         4 * +obj.adjacent[dynamic_tile_encode[(2 * i + 2) % 8]]), // See git for explanation
-                0, SearchMap.tile_size / 2, SearchMap.tile_size / 2, shift_subsprite_x + SearchMap.tile_size * p.x, shift_subsprite_y + SearchMap.tile_size * p.y, SearchMap.tile_size / 2, SearchMap.tile_size / 2);
+                (i * SearchMap.tile_size) / 2, SearchMap.tile_size / 2, SearchMap.tile_size / 2, shift_subsprite_x + SearchMap.tile_size * p.x, shift_subsprite_y + SearchMap.tile_size * p.y, SearchMap.tile_size / 2, SearchMap.tile_size / 2);
             }
         }
     }
