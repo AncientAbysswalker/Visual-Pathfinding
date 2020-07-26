@@ -46,12 +46,16 @@ const ttRoadBtn = document.getElementById("tt-road-btn")! as HTMLButtonElement;
 const ttForestBtn = document.getElementById(
   "tt-forest-btn"
 )! as HTMLButtonElement;
+const ttEraserBtn = document.getElementById(
+  "tt-eraser-btn"
+)! as HTMLButtonElement;
 const ttButtons = {
   start: ttStartBtn,
   finish: ttFinishBtn,
   water: ttBlockBtn,
   forest: ttForestBtn,
   road: ttRoadBtn,
+  eraser: ttEraserBtn,
 };
 
 // Search drop down element
@@ -1024,6 +1028,10 @@ ttRoadBtn.addEventListener("click", () => {
 ttForestBtn.addEventListener("click", () => {
   selectMapBtn("forest");
   SearchMap.tooltip = Tooltip.FOREST;
+});
+ttEraserBtn.addEventListener("click", () => {
+  selectMapBtn("eraser");
+  SearchMap.tooltip = Tooltip.ERASE;
 });
 
 // Select Search

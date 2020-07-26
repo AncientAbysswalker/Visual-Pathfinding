@@ -95,19 +95,6 @@ canvas {
   margin-top: 0px;
 }
 
-.selectable {
-  border: 4px solid transparent;
-}
-
-.selectable:not(.selected):hover {
-  border: 4px solid#006393;
-}
-
-.selected {
-  border: 4px solid#0095dd;
-  background: #006393;
-}
-
 .yellow-square {
   width: 10px;
   height: 10px;
@@ -192,6 +179,41 @@ canvas {
 .tt_btn {
   width: 50px;
   border-radius: 5px;
+}
+
+.btn_clickable {
+  background: #005d8b;
+  border: 4px solid transparent;
+}
+
+.btn_clickable:hover {
+  background: #006ba0;
+  border: 4px solid transparent;
+}
+
+.btn_clickable:active {
+  background: #006ba0;
+  border: 4px solid #005d8b;
+}
+
+.selectable {
+  background: #005d8b;
+  border: 4px solid transparent;
+}
+
+.selectable:not(.selected):hover {
+  background: #006ba0;
+  border: 4px solid transparent;
+}
+
+.selectable:not(.selected):active {
+  background: #006ba0;
+  border: 4px solid#004e75;
+}
+
+.selected {
+  background: #006ba0;
+  border: 4px solid#004e75;
 }
 
 .inline {
