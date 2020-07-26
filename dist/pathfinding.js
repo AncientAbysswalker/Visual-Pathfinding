@@ -331,8 +331,10 @@ let SearchMap = /** @class */ (() => {
             return this.grid[p.x][p.y];
         }
         getGridAdjacent(p, dir) {
-            let d = dirToVect(dir);
-            return this.grid[p.x + d.x][p.y + d.y];
+            let p_adj = addDimensioned(p, dirToVect(dir));
+            if (!SearchMap.withinCanvas(p_adj))
+                return null;
+            return this.getGrid(p_adj);
         }
         // Make a point impassible
         closePoint(p) {

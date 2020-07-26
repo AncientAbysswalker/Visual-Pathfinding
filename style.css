@@ -157,8 +157,9 @@ canvas {
   padding: 25px;
 }
 
-.toolbar {
-  text-align: center;
+.toolbar-section {
+  padding-left: 25px;
+  padding-right: 25px;
 }
 
 .toolbar-section > * {
@@ -220,15 +221,10 @@ canvas {
   display: inline;
 }
 
-.sparky {
+.toolbar {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-}
-
-.sparky > * {
-  padding-left: 25px;
-  padding-right: 25px;
 }
 
 .space {
