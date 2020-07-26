@@ -63,6 +63,10 @@ const searchDropDown = document.getElementById(
   "searchDropDown"
 )! as HTMLSelectElement;
 
+// Difficulty Sliders
+const sliderForest = document.getElementById("myRange")! as HTMLInputElement;
+const sliderRoad = document.getElementById("myRange2")! as HTMLInputElement;
+
 const error = document.getElementById("error")! as HTMLElement;
 
 // Reset Scores Button Elements
@@ -94,11 +98,7 @@ let s_start = newTile("s_start");
 let s_finish = newTile("s_finish");
 let s_road = newTile("s_road");
 
-type GridObjects = null | boolean | ReducedDifficulty | Block;
-
-interface ReducedDifficulty {
-  difficulty: number;
-}
+type GridObjects = null | boolean | Block | Road | Forest;
 
 interface HasSpriteSheet {
   subsprite: number;
@@ -172,24 +172,20 @@ class Block implements HasSpriteSheet, DynamicTiling {
   }
 }
 
-class Road implements ReducedDifficulty, HasSpriteSheet, DynamicTiling {
-  difficulty: number;
+class Road implements HasSpriteSheet, DynamicTiling {
   subsprite: number;
   adjacent: TilingAdjacency = { ...blankTilingAdjacency };
 
   constructor() {
-    this.difficulty = 1;
     this.subsprite = 0;
   }
 }
 
-class Forest implements ReducedDifficulty, HasSpriteSheet, DynamicTiling {
-  difficulty: number;
+class Forest implements HasSpriteSheet, DynamicTiling {
   subsprite: number;
   adjacent: TilingAdjacency = { ...blankTilingAdjacency };
 
   constructor() {
-    this.difficulty = 20;
     this.subsprite = 0;
   }
 }
@@ -329,6 +325,10 @@ class SearchMap {
   static cols = 100;
   static rows = 50;
 
+  // Difficulties
+  static difficultyStandard = 6;
+  static difficultyForest = 6;
+
   // Search variables
   static selected_search = Search.DIJKSTRA;
   current_search;
@@ -441,9 +441,11 @@ class SearchMap {
     let obj = this.getGrid(p);
 
     if (obj === null) {
-      return 10;
-    } else if (obj instanceof Road || obj instanceof Forest) {
-      return obj.difficulty;
+      return SearchMap.difficultyStandard;
+    } else if (obj instanceof Road) {
+      return 1;
+    } else if (obj instanceof Forest) {
+      return SearchMap.difficultyStandard + SearchMap.difficultyForest;
     }
   }
 
@@ -1050,4 +1052,12 @@ runSearchBtn.addEventListener("click", () => {
 // Clear Search Button
 clearSearchBtn.addEventListener("click", () => {
   SearchMap.current.clearSearch();
+});
+
+// Difficulty Sliders
+sliderRoad.addEventListener("change", (e) => {
+  SearchMap.difficultyStandard = +sliderRoad.value;
+});
+sliderForest.addEventListener("change", (e) => {
+  SearchMap.difficultyForest = +sliderForest.value;
 });

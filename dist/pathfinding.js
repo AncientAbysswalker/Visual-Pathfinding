@@ -36,6 +36,9 @@ const ttButtons = {
 };
 // Search drop down element
 const searchDropDown = document.getElementById("searchDropDown");
+// Difficulty Sliders
+const sliderForest = document.getElementById("myRange");
+const sliderRoad = document.getElementById("myRange2");
 const error = document.getElementById("error");
 // Reset Scores Button Elements
 const resetSPBtn = document.getElementById("reset-sp-score-btn");
@@ -105,14 +108,12 @@ class Block {
 class Road {
     constructor() {
         this.adjacent = Object.assign({}, blankTilingAdjacency);
-        this.difficulty = 1;
         this.subsprite = 0;
     }
 }
 class Forest {
     constructor() {
         this.adjacent = Object.assign({}, blankTilingAdjacency);
-        this.difficulty = 20;
         this.subsprite = 0;
     }
 }
@@ -314,10 +315,13 @@ let SearchMap = /** @class */ (() => {
         difficulty(p) {
             let obj = this.getGrid(p);
             if (obj === null) {
-                return 10;
+                return SearchMap.difficultyStandard;
             }
-            else if (obj instanceof Road || obj instanceof Forest) {
-                return obj.difficulty;
+            else if (obj instanceof Road) {
+                return 1;
+            }
+            else if (obj instanceof Forest) {
+                return SearchMap.difficultyStandard + SearchMap.difficultyForest;
             }
         }
         setGrid(p, o) {
@@ -578,6 +582,9 @@ let SearchMap = /** @class */ (() => {
     SearchMap.tile_size = 16;
     SearchMap.cols = 100;
     SearchMap.rows = 50;
+    // Difficulties
+    SearchMap.difficultyStandard = 6;
+    SearchMap.difficultyForest = 6;
     // Search variables
     SearchMap.selected_search = Search.DIJKSTRA;
     // Tooltip
@@ -834,5 +841,12 @@ runSearchBtn.addEventListener("click", () => {
 // Clear Search Button
 clearSearchBtn.addEventListener("click", () => {
     SearchMap.current.clearSearch();
+});
+// Difficulty Sliders
+sliderRoad.addEventListener("change", (e) => {
+    SearchMap.difficultyStandard = +sliderRoad.value;
+});
+sliderForest.addEventListener("change", (e) => {
+    SearchMap.difficultyForest = +sliderForest.value;
 });
 //# sourceMappingURL=pathfinding.js.map
