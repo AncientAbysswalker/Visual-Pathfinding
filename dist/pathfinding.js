@@ -280,7 +280,10 @@ let SearchMap = /** @class */ (() => {
         }
         static chosenAlgo(start, finish) {
             if (SearchMap.selected_search === Search.DIJKSTRA) {
-                return new Dijkstra(ptToStr(start), ptToStr(finish));
+                return new Dijkstra(start, finish);
+            }
+            else if (SearchMap.selected_search === Search.ASTAR) {
+                return new AStar(ptToStr(start), ptToStr(finish));
             }
         }
         // Return if the point is within the canvas
@@ -465,7 +468,7 @@ let SearchMap = /** @class */ (() => {
             this.drawGrid();
             if (!this.is_complete && this.start_search) {
                 this.cycle_step++;
-                if (this.cycle_step % 10 === 0) {
+                if (this.cycle_step % 1 === 0) {
                     this.is_complete = (_a = this.current_search) === null || _a === void 0 ? void 0 : _a.takeStep();
                     this.cycle_step = 0;
                 }
@@ -595,50 +598,54 @@ let SearchMap = /** @class */ (() => {
     SearchMap.id = 0;
     return SearchMap;
 })();
+// Dijkstra search algorithm class
 class Dijkstra {
+    // Constructor
     constructor(start, finish) {
         this.distances = {};
         this.previous = {};
         this.smallest = null;
         this.path = []; // Path to return
         this.nodes = new PriorityQueue();
-        this.start = start;
-        this.finish = finish;
-        //build up initial state
-        for (let vertex in SearchMap.current.adjacency_list) {
-            if (vertex === start) {
-                this.distances[vertex] = 0;
-                this.nodes.enqueue(vertex, 0);
+        this.start = ptToStr(start);
+        this.finish = ptToStr(finish);
+        //Build up initial state
+        for (let p in SearchMap.current.adjacency_list) {
+            if (p === this.start) {
+                this.distances[p] = 0;
+                this.nodes.enqueue(p, 0);
             }
             else {
-                this.distances[vertex] = Infinity;
-                this.nodes.enqueue(vertex, Infinity);
+                this.distances[p] = Infinity;
+                this.nodes.enqueue(p, Infinity);
             }
-            this.previous[vertex] = null;
+            this.previous[p] = null;
         }
     }
+    // Incrementally look at one more node to
     takeStep() {
-        // as long as there is something to visit
+        // As long as there is something to visit
         if (this.nodes.values.length) {
             this.smallest = this.nodes.dequeue().val;
             // End searching if all remaining nodes are infinitely far from the start
             if (this.distances[this.smallest] === Infinity) {
                 return true;
             }
+            // Push this step into the list of traversed points and check if we are finished
             SearchMap.current.traversed.push(stringToPoint(this.smallest));
             if (this.smallest === this.finish) {
-                //WE ARE DONE
-                //BUILD U PATH TO RETURN AT END
+                // Build up final path
                 while (this.previous[this.smallest]) {
                     this.path.push(stringToPoint(this.smallest));
                     this.smallest = this.previous[this.smallest];
                 }
-                //break;
+                // Tell current search controller instance what the final path is and return that we are complete
                 SearchMap.current.final_path = this.path
                     .concat(stringToPoint(this.smallest))
                     .reverse();
                 return true;
             }
+            // If we have a normal, not infinitely far node to look at
             if (this.smallest || this.distances[this.smallest] !== Infinity) {
                 for (let neighbor in SearchMap.current.adjacency_list[this.smallest]) {
                     //find neighboring node
@@ -661,6 +668,7 @@ class Dijkstra {
             }
         }
         else {
+            // If nothing left to visit,
             SearchMap.current.final_path = this.path
                 .concat(stringToPoint(this.smallest))
                 .reverse();
@@ -733,6 +741,79 @@ class priorityNode {
     constructor(val, priority) {
         this.val = val;
         this.priority = priority;
+    }
+}
+class AStar {
+    constructor(start, finish) {
+        this.distances = {};
+        this.previous = {};
+        this.smallest = null;
+        this.path = []; // Path to return
+        this.nodes = new PriorityQueue();
+        this.start = start;
+        this.finish = finish;
+        //build up initial state
+        for (let vertex in SearchMap.current.adjacency_list) {
+            if (vertex === start) {
+                this.distances[vertex] = 0;
+                this.nodes.enqueue(vertex, 0);
+            }
+            else {
+                this.distances[vertex] = Infinity;
+                this.nodes.enqueue(vertex, Infinity);
+            }
+            this.previous[vertex] = null;
+        }
+    }
+    takeStep() {
+        // as long as there is something to visit
+        if (this.nodes.values.length) {
+            this.smallest = this.nodes.dequeue().val;
+            // End searching if all remaining nodes are infinitely far from the start
+            if (this.distances[this.smallest] === Infinity) {
+                return true;
+            }
+            SearchMap.current.traversed.push(stringToPoint(this.smallest));
+            if (this.smallest === this.finish) {
+                //WE ARE DONE
+                //BUILD U PATH TO RETURN AT END
+                while (this.previous[this.smallest]) {
+                    this.path.push(stringToPoint(this.smallest));
+                    this.smallest = this.previous[this.smallest];
+                }
+                //break;
+                SearchMap.current.final_path = this.path
+                    .concat(stringToPoint(this.smallest))
+                    .reverse();
+                return true;
+            }
+            if (this.smallest || this.distances[this.smallest] !== Infinity) {
+                for (let neighbor in SearchMap.current.adjacency_list[this.smallest]) {
+                    //find neighboring node
+                    let nextNode = SearchMap.current.adjacency_list[this.smallest][neighbor];
+                    //calculate new distance to neighboring node
+                    let candidate = this.distances[this.smallest] +
+                        SearchMap.current.difficulty(nextNode); //.weight;
+                    console.log(candidate);
+                    let nextNeighbor = nextNode;
+                    if (candidate < this.distances[ptToStr(nextNeighbor)]) {
+                        //updating new smallest distance to neighbor
+                        this.distances[ptToStr(nextNeighbor)] = candidate;
+                        //updating previous - How we got to neighbor
+                        this.previous[ptToStr(nextNeighbor)] = this.smallest;
+                        //enqueue in priority queue with new priority
+                        this.nodes.enqueue(ptToStr(nextNeighbor), candidate);
+                    }
+                }
+                return false;
+            }
+        }
+        else {
+            SearchMap.current.final_path = this.path
+                .concat(stringToPoint(this.smallest))
+                .reverse();
+            return true;
+        }
     }
 }
 // JS Main
