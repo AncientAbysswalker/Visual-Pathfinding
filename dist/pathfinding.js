@@ -247,7 +247,6 @@ let SearchMap = /** @class */ (() => {
         }
         // Create new search map instance
         static newSearch() {
-            console.log("new_S");
             if (!SearchMap.current) {
                 SearchMap.current = new SearchMap();
                 SearchMap.update();
@@ -604,7 +603,6 @@ class Dijkstra {
     constructor(start, finish) {
         this.distances = {};
         this.previous = {};
-        this.smallest = null;
         this.path = []; // Path to return
         this.nodes = new PriorityQueue();
         this.start = ptToStr(start);
@@ -648,20 +646,19 @@ class Dijkstra {
             // If we have a normal, not infinitely far node to look at
             if (this.smallest || this.distances[this.smallest] !== Infinity) {
                 for (let neighbor in SearchMap.current.adjacency_list[this.smallest]) {
-                    //find neighboring node
-                    let nextNode = SearchMap.current.adjacency_list[this.smallest][neighbor];
-                    //calculate new distance to neighboring node
+                    // Get neighboring node
+                    let next_node = SearchMap.current.adjacency_list[this.smallest][neighbor];
+                    // Calculate new distance to neighboring node
                     let candidate = this.distances[this.smallest] +
-                        SearchMap.current.difficulty(nextNode); //.weight;
-                    console.log(candidate);
-                    let nextNeighbor = nextNode;
-                    if (candidate < this.distances[ptToStr(nextNeighbor)]) {
-                        //updating new smallest distance to neighbor
-                        this.distances[ptToStr(nextNeighbor)] = candidate;
-                        //updating previous - How we got to neighbor
-                        this.previous[ptToStr(nextNeighbor)] = this.smallest;
-                        //enqueue in priority queue with new priority
-                        this.nodes.enqueue(ptToStr(nextNeighbor), candidate);
+                        SearchMap.current.difficulty(next_node);
+                    // If this distance candidate is better than what we are already storing;
+                    if (candidate < this.distances[ptToStr(next_node)]) {
+                        // Updating new smallest distance to neighbor
+                        this.distances[ptToStr(next_node)] = candidate;
+                        // Updating previous - How we got to neighbor
+                        this.previous[ptToStr(next_node)] = this.smallest;
+                        // Enqueue in priority queue with new priority
+                        this.nodes.enqueue(ptToStr(next_node), candidate);
                     }
                 }
                 return false;
@@ -676,15 +673,19 @@ class Dijkstra {
         }
     }
 }
+// Binary heap implementation of Priority Queue for Dijkstra
 class PriorityQueue {
+    // Constructor
     constructor() {
         this.values = [];
     }
+    // Enqueue a new priority item
     enqueue(val, priority) {
-        let newNode = new priorityNode(val, priority);
+        let newNode = new PriorityNode(val, priority);
         this.values.push(newNode);
         this.bubbleUp();
     }
+    // Move a new priority item to its correct position
     bubbleUp() {
         let idx = this.values.length - 1;
         const element = this.values[idx];
@@ -698,6 +699,7 @@ class PriorityQueue {
             idx = parentIdx;
         }
     }
+    // Dequeue a priority item and return it
     dequeue() {
         const min = this.values[0];
         const end = this.values.pop();
@@ -707,6 +709,7 @@ class PriorityQueue {
         }
         return min;
     }
+    // Move priority items to correct position after removing one
     sinkDown() {
         let idx = 0;
         const length = this.values.length;
@@ -737,7 +740,9 @@ class PriorityQueue {
         }
     }
 }
-class priorityNode {
+// A priority node containing the value of the item and its priority
+class PriorityNode {
+    // Constructor
     constructor(val, priority) {
         this.val = val;
         this.priority = priority;
@@ -790,12 +795,12 @@ class AStar {
             if (this.smallest || this.distances[this.smallest] !== Infinity) {
                 for (let neighbor in SearchMap.current.adjacency_list[this.smallest]) {
                     //find neighboring node
-                    let nextNode = SearchMap.current.adjacency_list[this.smallest][neighbor];
+                    let next_node = SearchMap.current.adjacency_list[this.smallest][neighbor];
                     //calculate new distance to neighboring node
                     let candidate = this.distances[this.smallest] +
-                        SearchMap.current.difficulty(nextNode); //.weight;
-                    console.log(candidate);
-                    let nextNeighbor = nextNode;
+                        SearchMap.current.difficulty(next_node); //.weight;
+                    console.log("cand", candidate);
+                    let nextNeighbor = next_node;
                     if (candidate < this.distances[ptToStr(nextNeighbor)]) {
                         //updating new smallest distance to neighbor
                         this.distances[ptToStr(nextNeighbor)] = candidate;
@@ -830,7 +835,6 @@ function clk(e) {
     if (!SearchMap.current.start_search) {
         let pos = getMousePos(canvas, e);
         let p = toPoint(Math.floor(pos.x / SearchMap.tile_size), Math.floor(pos.y / SearchMap.tile_size));
-        //console.log(p);
         if (e.buttons == 1 || e.buttons == 3) {
             if (SearchMap.withinCanvas(p)) {
                 if (SearchMap.tooltip === Tooltip.BLOCK)
@@ -919,7 +923,6 @@ newSearchBtn.addEventListener("click", () => {
 // Run Search Button
 runSearchBtn.addEventListener("click", () => {
     SearchMap.current.runSearch();
-    console.log(SearchMap.current.adjacency_list);
 });
 // Clear Search Button
 clearSearchBtn.addEventListener("click", () => {
