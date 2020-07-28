@@ -1034,13 +1034,15 @@ class AStar {
           let next_node =
             SearchMap.current.adjacency_list[this.smallest][neighbor];
           // Calculate new distance to neighboring node
-          let candidate_g =
-            this.arr_g[this.smallest] + SearchMap.current.difficulty(next_node);
+          let candidate_f =
+            this.arr_g[this.smallest] +
+            SearchMap.current.difficulty(next_node) +
+            this.arr_h[ptToStr(next_node)];
 
           // If this distance candidate is better than what we are already storing;
-          if (candidate_g < this.arr_f[ptToStr(next_node)]) {
+          if (candidate_f < this.arr_f[ptToStr(next_node)]) {
             // Updating new smallest f to neighbor
-            this.arr_f[ptToStr(next_node)] = candidate_g;
+            this.arr_f[ptToStr(next_node)] = candidate_f;
             // Updating new smallest g to neighbor
             this.arr_g[ptToStr(next_node)] =
               this.arr_g[this.smallest] +
@@ -1049,10 +1051,7 @@ class AStar {
             // Updating previous - How we got to neighbor
             this.previous[ptToStr(next_node)] = this.smallest;
             // Enqueue in priority queue with new priority
-            this.nodes.enqueue(
-              ptToStr(next_node),
-              candidate_g + this.arr_h[ptToStr(next_node)]
-            );
+            this.nodes.enqueue(ptToStr(next_node), candidate_f);
           }
         }
         return false;
