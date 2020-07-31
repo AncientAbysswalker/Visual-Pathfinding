@@ -60,6 +60,7 @@ let s_start = newTile("s_start");
 let s_finish = newTile("s_finish");
 let s_road = newTile("s_road");
 let s_forest = newTile("s_forest");
+let s_water = newTile("s_water");
 // Blank object for dynamic tiling data
 let blankTilingAdjacency = {
     U: false,
@@ -499,7 +500,7 @@ let SearchMap = /** @class */ (() => {
                 for (let j = 0; j < SearchMap.rows; j++) {
                     let obj = this.grid[i][j];
                     if (obj instanceof Block) {
-                        this.drawTileSolidColor(toPoint(i, j), "#B6FDFF");
+                        this.drawTileWater(toPoint(i, j));
                     }
                     else if (obj instanceof Road) {
                         this.drawTileRoad(toPoint(i, j));
@@ -585,6 +586,22 @@ let SearchMap = /** @class */ (() => {
                 let shift_subsprite_y = i >= 2 ? 8 : 0;
                 // Draw subsprite
                 ctx.drawImage(s_road, (SearchMap.tile_size / 2) *
+                    (+obj.adjacent[dynamic_tile_encode[2 * i + 0]] +
+                        2 * +obj.adjacent[dynamic_tile_encode[2 * i + 1]] +
+                        4 * +obj.adjacent[dynamic_tile_encode[(2 * i + 2) % 8]]), // See git for explanation
+                (i * SearchMap.tile_size) / 2, SearchMap.tile_size / 2, SearchMap.tile_size / 2, shift_subsprite_x + SearchMap.tile_size * p.x, shift_subsprite_y + SearchMap.tile_size * p.y, SearchMap.tile_size / 2, SearchMap.tile_size / 2);
+            }
+        }
+        // Draw a water tile
+        drawTileWater(p) {
+            let obj = this.getGrid(p);
+            // Draw the four sub-sprites making up the whole
+            for (var i = 0; i < 4; i++) {
+                // Shift values to align the subsprite in the whole
+                let shift_subsprite_x = i % 3 !== 0 ? 8 : 0;
+                let shift_subsprite_y = i >= 2 ? 8 : 0;
+                // Draw subsprite
+                ctx.drawImage(s_water, (SearchMap.tile_size / 2) *
                     (+obj.adjacent[dynamic_tile_encode[2 * i + 0]] +
                         2 * +obj.adjacent[dynamic_tile_encode[2 * i + 1]] +
                         4 * +obj.adjacent[dynamic_tile_encode[(2 * i + 2) % 8]]), // See git for explanation
