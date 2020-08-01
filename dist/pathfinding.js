@@ -36,9 +36,6 @@ const ttButtons = {
 };
 // Search drop down element
 const searchDropDown = document.getElementById("searchDropDown");
-// Difficulty Sliders
-const sliderForest = document.getElementById("myRange");
-const sliderRoad = document.getElementById("myRange2");
 const error = document.getElementById("error");
 // Reset Scores Button Elements
 const resetSPBtn = document.getElementById("reset-sp-score-btn");
@@ -353,8 +350,6 @@ let SearchMap = /** @class */ (() => {
         // Make a point impassible
         closePoint(p) {
             // Set point to be solid
-            // if (!(this.getGrid(p) instanceof Block)) {
-            // this.setGrid(p, new Block());
             this.adjacency_list[ptToStr(p)] = [];
             // Remove entry from adjacency of adjacent points
             for (let p_adj of stdAdjacencies(p)) {
@@ -626,11 +621,11 @@ let SearchMap = /** @class */ (() => {
         }
     }
     SearchMap.tile_size = 16;
-    SearchMap.cols = 100;
-    SearchMap.rows = 50;
+    SearchMap.cols = 50;
+    SearchMap.rows = 25;
     // Difficulties
-    SearchMap.difficultyStandard = 6;
-    SearchMap.difficultyForest = 6;
+    SearchMap.difficultyStandard = 5;
+    SearchMap.difficultyForest = 5;
     // Search variables
     SearchMap.selected_search = Search.DIJKSTRA;
     // Tooltip
@@ -818,7 +813,8 @@ class AStar {
             }
             else {
                 this.arr_g[p] = Infinity;
-                this.arr_h[p] = 6 * manhattanDistance(strToPt(p), finish);
+                this.arr_h[p] =
+                    SearchMap.difficultyStandard * manhattanDistance(strToPt(p), finish);
                 this.arr_f[p] = Infinity;
                 this.nodes.enqueue(p, Infinity);
             }
@@ -904,7 +900,8 @@ class GreedyBFS {
             }
             else {
                 this.arr_g[p] = Infinity;
-                this.arr_h[p] = 6 * manhattanDistance(strToPt(p), finish);
+                this.arr_h[p] =
+                    SearchMap.difficultyStandard * manhattanDistance(strToPt(p), finish);
                 this.nodes.enqueue(p, Infinity);
             }
             this.previous[p] = null;
@@ -1072,12 +1069,5 @@ runSearchBtn.addEventListener("click", () => {
 // Clear Search Button
 clearSearchBtn.addEventListener("click", () => {
     SearchMap.current.clearSearch();
-});
-// Difficulty Sliders
-sliderRoad.addEventListener("change", (e) => {
-    SearchMap.difficultyStandard = +sliderRoad.value;
-});
-sliderForest.addEventListener("change", (e) => {
-    SearchMap.difficultyForest = +sliderForest.value;
 });
 //# sourceMappingURL=pathfinding.js.map

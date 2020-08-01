@@ -63,10 +63,6 @@ const searchDropDown = document.getElementById(
   "searchDropDown"
 )! as HTMLSelectElement;
 
-// Difficulty Sliders
-const sliderForest = document.getElementById("myRange")! as HTMLInputElement;
-const sliderRoad = document.getElementById("myRange2")! as HTMLInputElement;
-
 const error = document.getElementById("error")! as HTMLElement;
 
 // Reset Scores Button Elements
@@ -324,12 +320,12 @@ class SearchMap {
   static current: SearchMap;
   grid: GridObjects[][];
   static tile_size = 16;
-  static cols = 100;
-  static rows = 50;
+  static cols = 50;
+  static rows = 25;
 
   // Difficulties
-  static difficultyStandard = 6;
-  static difficultyForest = 6;
+  static difficultyStandard = 5;
+  static difficultyForest = 5;
 
   // Search variables
   static selected_search = Search.DIJKSTRA;
@@ -480,8 +476,6 @@ class SearchMap {
   // Make a point impassible
   closePoint(p: Point) {
     // Set point to be solid
-    // if (!(this.getGrid(p) instanceof Block)) {
-    // this.setGrid(p, new Block());
     this.adjacency_list[ptToStr(p)] = [];
 
     // Remove entry from adjacency of adjacent points
@@ -1056,7 +1050,8 @@ class AStar {
         this.nodes.enqueue(p, 0);
       } else {
         this.arr_g[p] = Infinity;
-        this.arr_h[p] = 6 * manhattanDistance(strToPt(p), finish);
+        this.arr_h[p] =
+          SearchMap.difficultyStandard * manhattanDistance(strToPt(p), finish);
         this.arr_f[p] = Infinity;
         this.nodes.enqueue(p, Infinity);
       }
@@ -1158,7 +1153,8 @@ class GreedyBFS {
         this.nodes.enqueue(p, 0);
       } else {
         this.arr_g[p] = Infinity;
-        this.arr_h[p] = 6 * manhattanDistance(strToPt(p), finish);
+        this.arr_h[p] =
+          SearchMap.difficultyStandard * manhattanDistance(strToPt(p), finish);
         this.nodes.enqueue(p, Infinity);
       }
       this.previous[p] = null;
@@ -1348,12 +1344,4 @@ runSearchBtn.addEventListener("click", () => {
 // Clear Search Button
 clearSearchBtn.addEventListener("click", () => {
   SearchMap.current.clearSearch();
-});
-
-// Difficulty Sliders
-sliderRoad.addEventListener("change", (e) => {
-  SearchMap.difficultyStandard = +sliderRoad.value;
-});
-sliderForest.addEventListener("change", (e) => {
-  SearchMap.difficultyForest = +sliderForest.value;
 });
