@@ -55,7 +55,7 @@ function newTile(sprite_name) {
 // Define Sprites
 let s_start = newTile("s_start");
 let s_finish = newTile("s_finish");
-let s_road = newTile("s_road");
+let s_road = newTile("s_road22");
 let s_forest = newTile("s_forest");
 let s_water = newTile("s_water");
 // Blank object for dynamic tiling data
@@ -263,9 +263,6 @@ let SearchMap = /** @class */ (() => {
                 this.cycle_step = 0;
                 this.start_search = true;
                 this.current_search = SearchMap.chosenAlgo(this.pt_start, this.pt_finish);
-            }
-            else {
-                showError("MISSING POINTS");
             }
         }
         clearSearch() {
@@ -1000,11 +997,6 @@ function clk(e) {
         }
     }
 }
-// Show input error message
-function showError(message) {
-    error.className = "error visible";
-    error.innerText = message;
-}
 // Show success outline
 function errorReset() {
     error.className = "error";
@@ -1069,5 +1061,12 @@ runSearchBtn.addEventListener("click", () => {
 // Clear Search Button
 clearSearchBtn.addEventListener("click", () => {
     SearchMap.current.clearSearch();
+});
+// Rules and close event handlers
+rulesBtn.addEventListener("click", () => {
+    rules.classList.add("show");
+});
+closeBtn.addEventListener("click", () => {
+    rules.classList.remove("show");
 });
 //# sourceMappingURL=pathfinding.js.map
