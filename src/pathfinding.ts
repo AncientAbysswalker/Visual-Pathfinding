@@ -92,7 +92,7 @@ function newTile(sprite_name: string) {
 // Define Sprites
 let s_start = newTile("s_start");
 let s_finish = newTile("s_finish");
-let s_road = newTile("s_road22");
+let s_road = newTile("s_road");
 let s_forest = newTile("s_forest");
 let s_water = newTile("s_water");
 
