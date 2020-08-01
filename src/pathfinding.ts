@@ -1266,12 +1266,6 @@ function clk(e: MouseEvent) {
   }
 }
 
-// Show success outline
-function errorReset() {
-  error.className = "error";
-  error.innerText = "Error Message";
-}
-
 // Handle setting
 canvas.addEventListener("mousemove", (e) => {
   clk(e);
