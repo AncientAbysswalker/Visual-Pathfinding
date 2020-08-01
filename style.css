@@ -146,6 +146,7 @@ canvas {
 
 .error {
   visibility: hidden;
+  text-align: mi;
 }
 
 .error.visible {
@@ -164,9 +165,10 @@ canvas {
 
 .toolbar-section > * {
   vertical-align: middle;
+  border: #ff3300 solid 1px;
 }
 
-.toolbar-section > p {
+.toolbar-section > p:first-child {
   color: white;
   padding-bottom: 5px;
   margin-bottom: 10px;
@@ -225,6 +227,7 @@ canvas {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  margin-bottom: 15px;
 }
 
 .space {
@@ -238,6 +241,15 @@ canvas {
 .sliders {
   height: 50px;
   width: 100px;
+  border: #ff3300 solid 5px;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+.error-container {
+  height: 50px;
+  width: 300px;
   border: #ff3300 solid 5px;
   display: inline-flex;
   flex-direction: column;

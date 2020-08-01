@@ -1023,12 +1023,16 @@ function euclideanDistance(p1: Point, p2: Point) {
   return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
 }
 
+function manhattanDistance(p1: Point, p2: Point) {
+  return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
+}
+
 // A* search algorithm class
 class AStar {
   nodes: PriorityQueue;
   arr_f: { [key: string]: number } = {}; // g+h
   arr_g: { [key: string]: number } = {}; // Distance
-  arr_h: { [key: string]: number } = {}; // Euclidean
+  arr_h: { [key: string]: number } = {}; // Heuristic
   previous: { [key: string]: null | string } = {};
 
   start: string;
@@ -1052,7 +1056,7 @@ class AStar {
         this.nodes.enqueue(p, 0);
       } else {
         this.arr_g[p] = Infinity;
-        this.arr_h[p] = 12 * euclideanDistance(strToPt(p), finish);
+        this.arr_h[p] = 6 * manhattanDistance(strToPt(p), finish);
         this.arr_f[p] = Infinity;
         this.nodes.enqueue(p, Infinity);
       }
@@ -1129,9 +1133,8 @@ class AStar {
 // Greedy best-first search algorithm class
 class GreedyBFS {
   nodes: PriorityQueue;
-  arr_f: { [key: string]: number } = {}; // g+h
   arr_g: { [key: string]: number } = {}; // Distance
-  arr_h: { [key: string]: number } = {}; // Euclidean
+  arr_h: { [key: string]: number } = {}; // Heuristic
   previous: { [key: string]: null | string } = {};
 
   start: string;
@@ -1155,8 +1158,7 @@ class GreedyBFS {
         this.nodes.enqueue(p, 0);
       } else {
         this.arr_g[p] = Infinity;
-        this.arr_h[p] = 120 * euclideanDistance(strToPt(p), finish);
-        //this.arr_f[p] = Infinity;
+        this.arr_h[p] = 6 * manhattanDistance(strToPt(p), finish);
         this.nodes.enqueue(p, Infinity);
       }
       this.previous[p] = null;
