@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <link rel="stylesheet" href="style.css" />
-    <title>Snek Game</title>
+    <title>Visual Pathfinding</title>
   </head>
   <body>
-    <h1>Pathfinding: Waldo's Long Journey Home</h1>
+    <h1>Pathfinding: Waldo's Journey Home</h1>
     <div class="map-container">
       <div>
         <div class="toolbar">
@@ -90,78 +90,57 @@
         <canvas id="canvas" width="800" height="400"></canvas>
       </div>
     </div>
-    <button id="rules-btn" class="btn rules-btn">Settings & Help</button>
+    <button id="rules-btn" class="btn rules-btn">Help</button>
 
     <div id="rules" class="rules">
       <button id="close-btn" class="btn">Close</button>
 
-      <h2>How To Play:</h2>
+      <h2>Background:</h2>
       <p>
-        Navigate the snake to food to gain points. Watch out though, every
-        pellet you eat makes makes your snake longer, and makes all snakes move
-        faster!
+        After travelling the world and seeing many things of great intrigue,
+        Waldo has decided to return home to visit his family and his puppy
+        Wilhelm III. <br /><br />
+        He is consulting his handy pocket map and trying to determine the
+        optimal path from his current position to his home. As he has a degree
+        is mathematics, he decides to do this considering one of the search
+        algorithms he is familiar with.
       </p>
-      <h2>Controls:</h2>
-      <div class="row-container">
-        <!-- <div style="text-align: center;">
-          <img src="img/arrows.png" alt="arrow keys" class="img-ctrl" />
-          <p class="control-label">Player 1</p>
-        </div>
-        <div style="text-align: center;">
-          <img src="img/wasd.png" alt="wasd" class="img-ctrl" />
-          <p class="control-label">Player 2</p>
-        </div> -->
-      </div>
-      <h2>Map:</h2>
-      <div class="row-container">
-        <!-- <img
-          id="map0img"
-          src="img/map0.png"
-          alt="map0"
-          class="selectable selected"
-        />
-        <img id="map1img" src="img/map1.png" alt="map1" class="selectable" />
-        <img id="map2img" src="img/map2.png" alt="map2" class="selectable" /> -->
-      </div>
-      <h2>Game Mode:</h2>
-      <div class="row-container">
-        <!-- <div
-          id="sp-img"
-          style="text-align: center;"
-          class="selectable selected"
-        >
-          <img src="img/1p.png" alt="arrow keys" class="img-ctrl" />
-          <p class="control-label">Single Player</p>
-        </div>
-        <div id="mp-img" style="text-align: center;" class="selectable">
-          <img src="img/2p.png" alt="wasd" class="img-ctrl" />
-          <p class="control-label">Two Player</p>
-        </div> -->
-      </div>
-      <h2>Food Values:</h2>
-      <div class="food-table">
-        <div class="food-table-col-left">
-          <div><div class="yellow-square"></div></div>
-          <div><div class="orange-square"></div></div>
-          <div><div class="red-square"></div></div>
-          <div><div class="magic-square"></div></div>
-        </div>
-        <div class="food-table-col-right">
-          <div>5 Points</div>
-          <div>10 Points</div>
-          <div>25 Points</div>
-          <div>???</div>
-        </div>
-      </div>
-      <h2>Reset Scores:</h2>
-      <div class="row-container">
-        <button id="reset-sp-score-btn" class="btn score-btn">
-          Reset Single Player
-        </button>
-        <button id="reset-mp-score-btn" class="btn score-btn">
-          Reset Multiplayer
-        </button>
-      </div>
+      <h2>Instructions:</h2>
+      <p>
+        Draw out a map of the terrain to conduct pathfinding in. Different
+        tooltips will place different terrain onto the map; each tooltip has
+        mouseover text describing what it places. <br /><br />
+        When you are satisfied with your map place the start and end markers,
+        select your search, and start.
+      </p>
+      <h2>Tooltips:</h2>
+      <h4>Start Marker</h4>
+      <p>
+        Places your start marker. This must be placed to run a search.
+      </p>
+      <h4>Finish Marker</h4>
+      <p>
+        Places your finish marker. This must be placed to run a search.
+      </p>
+      <h4>Water</h4>
+      <p>
+        Places a Water Tile. Water tiles cannot be passed through.
+      </p>
+      <h4>Road</h4>
+      <p>
+        Places a Road Tile. Movement on roads is five times (5x) easier than
+        default.
+      </p>
+      <h4>Forest</h4>
+      <p>
+        Places a Forest Tile. Movement in forests is five times (5x) harder than
+        default.
+      </p>
+      <h4>Eraser</h4>
+      <p>
+        Cleares any tiles from a position. Right-click is always bound to this
+        tooltip.
+      </p>
     </div>
 
     <script src="dist/pathfinding.js"></script>

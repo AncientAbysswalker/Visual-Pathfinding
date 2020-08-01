@@ -28,6 +28,11 @@ h2 {
   margin-bottom: 5px;
 }
 
+h4 {
+  margin-top: 8px;
+  margin-bottom: 0px;
+}
+
 canvas {
   background: #2fe7c5;
   display: block;
@@ -71,10 +76,10 @@ canvas {
   background: #004161;
   color: #fff;
   min-height: 100vh;
-  width: 400px;
+  width: 500px;
   padding: 20px;
   line-height: 1.5;
-  transform: translateX(-400px);
+  transform: translateX(-500px);
   transition: transform 1s ease-in-out;
 }
 
@@ -93,64 +98,6 @@ canvas {
 
 .control-label {
   margin-top: 0px;
-}
-
-.yellow-square {
-  width: 10px;
-  height: 10px;
-  background: #ffcc00;
-}
-
-.orange-square {
-  width: 10px;
-  height: 10px;
-  background: #ff9900;
-}
-
-.red-square {
-  width: 10px;
-  height: 10px;
-  background: #ff3300;
-}
-
-.magic-square {
-  width: 10px;
-  height: 10px;
-  background: #660066;
-}
-
-.food-table {
-  display: flex;
-  margin: 0;
-  padding: 0;
-}
-
-.food-table-col-left {
-  margin-left: 15px;
-  margin-right: 10px;
-}
-
-.food-table-col-left > * {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 25px;
-}
-
-.food-table-col-right > * {
-  display: flex;
-  align-items: center;
-  justify-content: left;
-  height: 25px;
-}
-
-.error {
-  visibility: hidden;
-  text-align: mi;
-}
-
-.error.visible {
-  visibility: visible;
 }
 
 .map-container {
@@ -218,10 +165,6 @@ canvas {
   border: 4px solid#004e75;
 }
 
-.inline {
-  display: inline;
-}
-
 .toolbar {
   display: flex;
   flex-direction: row;
@@ -231,56 +174,4 @@ canvas {
 
 .space {
   padding: 15px;
-}
-
-.kker {
-  display: inline-block;
-}
-
-.sliders {
-  height: 50px;
-  width: 100px;
-  border: #ff3300 solid 5px;
-  display: inline-flex;
-  flex-direction: column;
-  justify-content: space-around;
-}
-
-.error-container {
-  height: 50px;
-  width: 300px;
-  border: #ff3300 solid 5px;
-  display: inline-flex;
-  flex-direction: column;
-  justify-content: space-around;
-}
-
-.slider {
-  -webkit-appearance: none;
-  width: 100%;
-  height: 5px;
-  border-radius: 5px;
-  background: #d3d3d3;
-  outline: none;
-  opacity: 0.7;
-  -webkit-transition: 0.2s;
-  transition: opacity 0.2s;
-}
-
-.slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #4caf50;
-  cursor: pointer;
-}
-
-.slider::-moz-range-thumb {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #4caf50;
-  cursor: pointer;
 }
