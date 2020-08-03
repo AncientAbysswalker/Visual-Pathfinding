@@ -22,7 +22,7 @@ I originally was working with very simple tiles while developing this program. A
 
 Looking at any given tile, the tile is potentially adjacent to up to eight (8) more similar tiles; in order to make a tile for each of these states, a total of 256 (2<sup>8</sup>) unique tiles. This is slightly ridiculous and would result in a "large" image (not really but thinking of the memory space involved in older games), which made me think about ways to optimize this slighly. By splitting the tile into quadrants each quadrant can be defined completely by three of the adjacency checks, which can be stored in the object for minimal storage to reduce time complexity at each draw.
 
-PIC
+![Splitting tile into quadrants](https://raw.githubusercontent.com/AncientAbysswalker/Visual-Pathfinding/master/md/fig1.png)
 
 Splitting the tile into four (4) subtiles reduces the number of unique tiles to a total of 8 (2<sup>3</sup>) unique subtiles per quadrant, for a total of 32 unique subtiles overall - which is much more manageable. Doing this allows me to arrange a sprite sheet for each quadrant such that the locations of each unique subtile in the sprite sheet is simply the encoding the adjacency checks into the number representation for the three bits.
 
