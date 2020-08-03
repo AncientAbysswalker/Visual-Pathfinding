@@ -30,4 +30,4 @@ Splitting the tile into four (4) subtiles reduces the number of unique tiles to 
 
 Finally, the sprite sheets for each of the quadrants can be combined into a single sprite sheet, with the row being correlated directly with the quadrant.
 
-PIC
+![Full spritesheet](https://raw.githubusercontent.com/AncientAbysswalker/Visual-Pathfinding/master/md/fig3.png)
