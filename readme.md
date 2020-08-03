@@ -26,7 +26,7 @@ Looking at any given tile, the tile is potentially adjacent to up to eight (8) m
 
 Splitting the tile into four (4) subtiles reduces the number of unique tiles to a total of 8 (2<sup>3</sup>) unique subtiles per quadrant, for a total of 32 unique subtiles overall - which is much more manageable. Doing this allows me to arrange a sprite sheet for each quadrant such that the locations of each unique subtile in the sprite sheet is simply the encoding the adjacency checks into the number representation for the three bits.
 
-PIC
+![Encoding tiles by adjacency](https://raw.githubusercontent.com/AncientAbysswalker/Visual-Pathfinding/master/md/fig2.png)
 
 Finally, the sprite sheets for each of the quadrants can be combined into a single sprite sheet, with the row being correlated directly with the quadrant.
 
