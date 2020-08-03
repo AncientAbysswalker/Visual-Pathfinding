@@ -1,4 +1,4 @@
-# Snake Game
+# Visual Pathfinding
 
 ## Working Demo
 
