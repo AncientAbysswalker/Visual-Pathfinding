@@ -1055,9 +1055,11 @@ searchDropDown.addEventListener("change", (e) => {
     SearchMap.selected_search = searchDropDown.value;
 });
 // New Search Button
-newSearchBtn.addEventListener("click", () => {
-    SearchMap.newSearch();
-});
+if (newSearchBtn) {
+    newSearchBtn.addEventListener("click", () => {
+        SearchMap.newSearch();
+    });
+}
 // Run Search Button
 runSearchBtn.addEventListener("click", () => {
     SearchMap.current.runSearch();
