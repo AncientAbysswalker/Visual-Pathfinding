@@ -7,16 +7,6 @@ const rules = document.getElementById("rules")! as HTMLDivElement;
 const canvas = document.getElementById("canvas")! as HTMLCanvasElement;
 const ctx = canvas.getContext("2d")!;
 
-// Map Selection Elements
-const map0Btn = document.getElementById("map0img")! as HTMLImageElement;
-const map1Btn = document.getElementById("map1img")! as HTMLImageElement;
-const map2Btn = document.getElementById("map2img")! as HTMLImageElement;
-const mapBtns = [map0Btn, map1Btn, map2Btn];
-
-// Game Mode Selection Elements
-const spBtn = document.getElementById("sp-img")! as HTMLImageElement;
-const mpBtn = document.getElementById("mp-img")! as HTMLImageElement;
-
 // New Search Button
 const newSearchBtn = document.getElementById(
   "new-search-btn"
@@ -39,7 +29,7 @@ const ttStartBtn = document.getElementById(
 const ttFinishBtn = document.getElementById(
   "tt-finish-btn"
 )! as HTMLButtonElement;
-const ttBlockBtn = document.getElementById(
+const ttWaterBtn = document.getElementById(
   "tt-block-btn"
 )! as HTMLButtonElement;
 const ttRoadBtn = document.getElementById("tt-road-btn")! as HTMLButtonElement;
@@ -52,7 +42,7 @@ const ttEraserBtn = document.getElementById(
 const ttButtons = {
   start: ttStartBtn,
   finish: ttFinishBtn,
-  water: ttBlockBtn,
+  water: ttWaterBtn,
   forest: ttForestBtn,
   road: ttRoadBtn,
   eraser: ttEraserBtn,
@@ -62,16 +52,6 @@ const ttButtons = {
 const searchDropDown = document.getElementById(
   "searchDropDown"
 )! as HTMLSelectElement;
-
-const error = document.getElementById("error")! as HTMLElement;
-
-// Reset Scores Button Elements
-const resetSPBtn = document.getElementById(
-  "reset-sp-score-btn"
-)! as HTMLButtonElement;
-const resetMPBtn = document.getElementById(
-  "reset-mp-score-btn"
-)! as HTMLButtonElement;
 
 // Concat the path for sprite images
 function spritePath(sprite_name: string) {
@@ -96,11 +76,8 @@ let s_road = newTile("s_road");
 let s_forest = newTile("s_forest");
 let s_water = newTile("s_water");
 
-type GridObjects = null | boolean | Block | Road | Forest;
-
-interface HasSpriteSheet {
-  subsprite: number;
-}
+// Allowable types to be placed into the grid
+type GridObjects = null | Water | Road | Forest;
 
 // Interface to extend when object has dynamic tiling
 interface DynamicTiling {
@@ -131,7 +108,7 @@ let blankTilingAdjacency: TilingAdjacency = {
   UR: false,
 };
 
-//
+// Returns whether the object at a position is a dynamic tile
 function isDynamicTile(o: GridObjects) {
   if (o !== null) {
     return o.hasOwnProperty("adjacent");
@@ -140,52 +117,25 @@ function isDynamicTile(o: GridObjects) {
   }
 }
 
-function dirReverse(dir: Dir): Dir {
-  switch (dir) {
-    case Dir.U:
-      return Dir.D;
-    case Dir.D:
-      return Dir.U;
-    case Dir.L:
-      return Dir.R;
-    case Dir.R:
-      return Dir.L;
-    case Dir.UL:
-      return Dir.DR;
-    case Dir.UR:
-      return Dir.DL;
-    case Dir.DL:
-      return Dir.UR;
-    case Dir.DR:
-      return Dir.UL;
-  }
-}
-
-class Block implements HasSpriteSheet, DynamicTiling {
-  subsprite: number;
+// Class implementing water tiles
+class Water implements DynamicTiling {
   adjacent: TilingAdjacency = { ...blankTilingAdjacency };
 
-  constructor() {
-    this.subsprite = 0;
-  }
+  constructor() {}
 }
 
-class Road implements HasSpriteSheet, DynamicTiling {
-  subsprite: number;
+// Class implementing road tiles
+class Road implements DynamicTiling {
   adjacent: TilingAdjacency = { ...blankTilingAdjacency };
 
-  constructor() {
-    this.subsprite = 0;
-  }
+  constructor() {}
 }
 
-class Forest implements HasSpriteSheet, DynamicTiling {
-  subsprite: number;
+// Class implementing forest tiles
+class Forest implements DynamicTiling {
   adjacent: TilingAdjacency = { ...blankTilingAdjacency };
 
-  constructor() {
-    this.subsprite = 0;
-  }
+  constructor() {}
 }
 
 // Directionality ENUM
@@ -200,7 +150,7 @@ enum Dir {
   DR = "DR",
 }
 
-// dynamic_tile_encode
+// Bitwise encode for dynamic tiling
 let dynamic_tile_encode = [
   Dir.L,
   Dir.UL,
@@ -234,6 +184,28 @@ function dirToVect(dir: Dir): Vector {
   }
 }
 
+// Reverse a Dir to the opposite direction
+function dirReverse(dir: Dir): Dir {
+  switch (dir) {
+    case Dir.U:
+      return Dir.D;
+    case Dir.D:
+      return Dir.U;
+    case Dir.L:
+      return Dir.R;
+    case Dir.R:
+      return Dir.L;
+    case Dir.UL:
+      return Dir.DR;
+    case Dir.UR:
+      return Dir.DL;
+    case Dir.DL:
+      return Dir.UR;
+    case Dir.DR:
+      return Dir.UL;
+  }
+}
+
 // Interfaces
 interface Dimensioned {
   x: number;
@@ -260,10 +232,22 @@ function ptToStr(p: Point) {
   return `{x: ${p.x}, y: ${p.y}}`;
 }
 
+// Sum two dimensioned objects
 function addDimensioned(p1: Dimensioned, p2: Dimensioned): Dimensioned {
   return { x: p1.x + p2.x, y: p1.y + p2.y };
 }
 
+// Calculate the euclidean distance between two points
+function euclideanDistance(p1: Point, p2: Point) {
+  return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+}
+
+// Calculate the manhattan distance between two points
+function manhattanDistance(p1: Point, p2: Point) {
+  return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
+}
+
+// Determine if two points are identical
 function samePoint(p1: Point, p2: Point) {
   if (!p1 || !p2) {
     return false;
@@ -281,7 +265,8 @@ function stdAdjacencies(p: Point) {
   ];
 }
 
-function myIndexOf(arr, o) {
+// indexOf function that handles Points
+function indexOfPt(arr, o) {
   for (var i = 0; i < arr.length; i++) {
     if (arr[i].x == o.x && arr[i].y == o.y) {
       return i;
@@ -290,22 +275,24 @@ function myIndexOf(arr, o) {
   return -1;
 }
 
+// Enum of available tooltips
 enum Tooltip {
   ERASE,
-  BLOCK,
+  WATER,
   START,
   FINISH,
   ROAD,
   FOREST,
 }
 
+// Enum of available searches
 enum Search {
   DIJKSTRA = "Dijkstra",
   ASTAR = "A*",
   GBFS = "Greedy Best-First",
 }
 
-//searchDropDown
+// Fucntion to populate the list of available searches
 function populateSearchList() {
   for (var search of Object.values(Search)) {
     var el = document.createElement("option");
@@ -315,6 +302,7 @@ function populateSearchList() {
   }
 }
 
+// Class that inplements search instances
 class SearchMap {
   // Map parameters
   static current: SearchMap;
@@ -343,11 +331,7 @@ class SearchMap {
   start_search = false;
 
   // Tooltip
-  static tooltip = Tooltip.BLOCK;
-
-  // To Remove
-  static id = 0;
-  id: number;
+  static tooltip = Tooltip.WATER;
 
   // Create new search map instance
   static newSearch() {
@@ -363,14 +347,9 @@ class SearchMap {
   private constructor() {
     this.genAdjacency();
     this.genGrid();
-    // SearchMap.id++;
-    // this.id = SearchMap.id;
-
-    //this.pt_start = { x: 0, y: 0 };
-    //this.pt_finish = { x: 5, y: 5 };
   }
 
-  //
+  // Run current search instance based on selection
   runSearch() {
     if (this.pt_start && this.pt_finish) {
       // Reset drawn path
@@ -384,6 +363,7 @@ class SearchMap {
     }
   }
 
+  // Clear and reset current search
   clearSearch() {
     // Reset pathfinding
     this.traversed = [];
@@ -395,6 +375,7 @@ class SearchMap {
     this.start_search = false;
   }
 
+  // Instantiate search algorithm based on selection
   static chosenAlgo(start: Point, finish: Point) {
     if (SearchMap.selected_search === Search.DIJKSTRA) {
       return new Dijkstra(start, finish);
@@ -438,6 +419,7 @@ class SearchMap {
     }
   }
 
+  // Get the difficulty at a location
   difficulty(p: Point) {
     let obj = this.getGrid(p);
 
@@ -450,20 +432,24 @@ class SearchMap {
     }
   }
 
+  // Set object at grid location
   private setGrid(p: Point, o: GridObjects) {
     this.grid[p.x][p.y] = o;
   }
 
+  // Get object at grid location
   private getGrid(p: Point) {
     return this.grid[p.x][p.y];
   }
 
+  // Get object at location adjacent to a point
   private getGridAdjacent(p: Point, dir: Dir) {
     let p_adj = addDimensioned(p, dirToVect(dir));
     if (!SearchMap.withinCanvas(p_adj)) return null;
     return this.getGrid(p_adj);
   }
 
+  // Update internal state based on the current point being observed
   setCurrentSearchPosition(p: Point) {
     if (!this.traversed.includes(ptToStr(p))) {
       this.traversed.push(ptToStr(p));
@@ -480,8 +466,8 @@ class SearchMap {
     for (let p_adj of stdAdjacencies(p)) {
       if (SearchMap.withinCanvas(p_adj)) {
         let a = this.adjacency_list[ptToStr(p_adj)];
-        if (myIndexOf(a, p) > -1) {
-          a.splice(myIndexOf(a, p), 1);
+        if (indexOfPt(a, p) > -1) {
+          a.splice(indexOfPt(a, p), 1);
         }
       }
     }
@@ -503,7 +489,7 @@ class SearchMap {
       for (let p_adj of stdAdjacencies(p)) {
         if (
           SearchMap.withinCanvas(p_adj) &&
-          !(this.getGrid(p_adj) instanceof Block)
+          !(this.getGrid(p_adj) instanceof Water)
         ) {
           this.adjacency_list[ptToStr(p)].push(p_adj);
           this.adjacency_list[ptToStr(p_adj)].push(p);
@@ -584,11 +570,11 @@ class SearchMap {
   // Place a new Water tile
   placeWater(p: Point) {
     // If the position is not already an instance of this class
-    if (!(this.getGrid(p) instanceof Block)) {
+    if (!(this.getGrid(p) instanceof Water)) {
       // Remove dynamic tiling around this position and clear this position
       this.clearPosition(p);
       this.closePoint(p);
-      let new_obj = new Block();
+      let new_obj = new Water();
 
       // Create data for dynamic tiling
       for (var _dir of Object.keys(Dir)) {
@@ -596,7 +582,7 @@ class SearchMap {
         let p_adj = this.getGridAdjacent(p, dir);
 
         // If there is an adjacent instance of this class, note this
-        if (p_adj instanceof Block) {
+        if (p_adj instanceof Water) {
           new_obj.adjacent[dir] = true;
           p_adj.adjacent[dirReverse(dir)] = true;
         }
@@ -607,6 +593,7 @@ class SearchMap {
     }
   }
 
+  // Update canvas loop
   static update() {
     SearchMap.current.draw();
 
@@ -646,7 +633,7 @@ class SearchMap {
     for (let i = 0; i < SearchMap.cols; i++) {
       for (let j = 0; j < SearchMap.rows; j++) {
         let obj = this.grid[i][j];
-        if (obj instanceof Block) {
+        if (obj instanceof Water) {
           this.drawTileWater(toPoint(i, j));
         } else if (obj instanceof Road) {
           this.drawTileRoad(toPoint(i, j));
@@ -657,52 +644,49 @@ class SearchMap {
     }
   }
 
+  // Draw currently traversed points on the map
   drawSearch() {
     for (let p of this.traversed) {
       this.drawTileSolidColor(strToPt(p), "#ffff00");
     }
-    if (this.current_traverse) {
+    if (!this.is_complete && this.current_traverse) {
       this.drawTileSolidColor(this.current_traverse, "#000000");
     }
   }
 
+  // Draw the shortest path as a red arrow
   drawShortestPath() {
     let pt_arr = this.final_path;
     if (pt_arr.length > 1) {
       ctx.strokeStyle = "red";
+      ctx.fillStyle = "red";
       ctx.beginPath();
       ctx.lineWidth = 2;
       ctx.moveTo(pt_arr[0].x * 16 + 8, pt_arr[0].y * 16 + 8);
+
+      // Draw line segments
       for (var i = 1; i < pt_arr.length; i++) {
         ctx.lineTo(pt_arr[i].x * 16 + 8, pt_arr[i].y * 16 + 8);
-        // this.canvas_arrow(
-        //   ctx,
-        //   pt_arr[i].x * 16 + 8,
-        //   pt_arr[i].y * 16 + 8,
-        //   pt_arr[i + 1].x * 16 + 8,
-        //   pt_arr[i + 1].y * 16 + 8
-        // );
       }
       ctx.stroke();
       ctx.closePath();
       let p1 = pt_arr[pt_arr.length - 1];
       let p2 = pt_arr[pt_arr.length - 2];
-      let headlen = 8;
+
+      // Draw arrow head
+      ctx.save();
       ctx.beginPath();
-      ctx.lineWidth = 4;
-      var angle = Math.atan2(p1.y - p2.y, p1.x - p2.x);
-      ctx.moveTo(p1.x * 16 + 8, p1.y * 16 + 8);
-      ctx.lineTo(
-        p1.x * 16 + 8 - headlen * Math.cos(angle - Math.PI / 6),
-        p1.y * 16 + 8 - headlen * Math.sin(angle - Math.PI / 6)
+      ctx.translate(16 * p1.x + 8, 16 * p1.y + 8);
+      ctx.rotate(
+        Math.atan((p2.y - p1.y) / (p2.x - p1.x)) +
+          ((p1.x > p2.x ? 90 : -90) * Math.PI) / 180
       );
-      ctx.lineTo(
-        p1.x * 16 + 8 - headlen * Math.cos(angle + Math.PI / 6),
-        p1.y * 16 + 8 - headlen * Math.sin(angle + Math.PI / 6)
-      );
-      ctx.lineTo(p1.x * 16 + 8, p1.y * 16 + 8);
-      ctx.stroke();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(5, 10);
+      ctx.lineTo(-5, 10);
       ctx.closePath();
+      ctx.restore();
+      ctx.fill();
     }
   }
 
@@ -778,7 +762,7 @@ class SearchMap {
 
   // Draw a water tile
   drawTileWater(p: Point) {
-    let obj = this.getGrid(p) as Block;
+    let obj = this.getGrid(p) as Water;
 
     // Draw the four sub-sprites making up the whole
     for (var i = 0; i < 4; i++) {
@@ -924,101 +908,6 @@ class Dijkstra {
   }
 }
 
-// Binary heap implementation of Priority Queue for Dijkstra
-class PriorityQueue {
-  values: PriorityNode[];
-
-  // Constructor
-  constructor() {
-    this.values = [];
-  }
-
-  // Enqueue a new priority item
-  enqueue(val: string, priority: number) {
-    let newNode = new PriorityNode(val, priority);
-    this.values.push(newNode);
-    this.bubbleUp();
-  }
-
-  // Move a new priority item to its correct position
-  bubbleUp() {
-    let idx = this.values.length - 1;
-    const element = this.values[idx];
-    while (idx > 0) {
-      let parentIdx = Math.floor((idx - 1) / 2);
-      let parent = this.values[parentIdx];
-      if (element.priority >= parent.priority) break;
-      this.values[parentIdx] = element;
-      this.values[idx] = parent;
-      idx = parentIdx;
-    }
-  }
-
-  // Dequeue a priority item and return it
-  dequeue() {
-    const min = this.values[0];
-    const end = this.values.pop();
-    if (this.values.length > 0) {
-      this.values[0] = end;
-      this.sinkDown();
-    }
-    return min;
-  }
-
-  // Move priority items to correct position after removing one
-  sinkDown() {
-    let idx = 0;
-    const length = this.values.length;
-    const element = this.values[0];
-    while (true) {
-      let leftChildIdx = 2 * idx + 1;
-      let rightChildIdx = 2 * idx + 2;
-      let leftChild, rightChild;
-      let swap = null;
-
-      if (leftChildIdx < length) {
-        leftChild = this.values[leftChildIdx];
-        if (leftChild.priority < element.priority) {
-          swap = leftChildIdx;
-        }
-      }
-      if (rightChildIdx < length) {
-        rightChild = this.values[rightChildIdx];
-        if (
-          (swap === null && rightChild.priority < element.priority) ||
-          (swap !== null && rightChild.priority < leftChild.priority)
-        ) {
-          swap = rightChildIdx;
-        }
-      }
-      if (swap === null) break;
-      this.values[idx] = this.values[swap];
-      this.values[swap] = element;
-      idx = swap;
-    }
-  }
-}
-
-// A priority node containing the value of the item and its priority
-class PriorityNode {
-  val: string;
-  priority: number;
-
-  // Constructor
-  constructor(val, priority) {
-    this.val = val;
-    this.priority = priority;
-  }
-}
-
-function euclideanDistance(p1: Point, p2: Point) {
-  return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
-}
-
-function manhattanDistance(p1: Point, p2: Point) {
-  return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
-}
-
 // A* search algorithm class
 class AStar {
   nodes: PriorityQueue;
@@ -1048,8 +937,7 @@ class AStar {
         this.nodes.enqueue(p, 0);
       } else {
         this.arr_g[p] = Infinity;
-        this.arr_h[p] =
-          SearchMap.difficultyStandard * manhattanDistance(strToPt(p), finish);
+        this.arr_h[p] = manhattanDistance(strToPt(p), finish);
         this.arr_f[p] = Infinity;
         this.nodes.enqueue(p, Infinity);
       }
@@ -1151,8 +1039,7 @@ class GreedyBFS {
         this.nodes.enqueue(p, 0);
       } else {
         this.arr_g[p] = Infinity;
-        this.arr_h[p] =
-          SearchMap.difficultyStandard * manhattanDistance(strToPt(p), finish);
+        this.arr_h[p] = manhattanDistance(strToPt(p), finish);
         this.nodes.enqueue(p, Infinity);
       }
       this.previous[p] = null;
@@ -1224,10 +1111,98 @@ class GreedyBFS {
   }
 }
 
+// Binary heap implementation of Priority Queue for Searches
+class PriorityQueue {
+  values: PriorityNode[];
+
+  // Constructor
+  constructor() {
+    this.values = [];
+  }
+
+  // Enqueue a new priority item
+  enqueue(val: string, priority: number) {
+    let newNode = new PriorityNode(val, priority);
+    this.values.push(newNode);
+    this.bubbleUp();
+  }
+
+  // Move a new priority item to its correct position
+  bubbleUp() {
+    let idx = this.values.length - 1;
+    const element = this.values[idx];
+    while (idx > 0) {
+      let parentIdx = Math.floor((idx - 1) / 2);
+      let parent = this.values[parentIdx];
+      if (element.priority >= parent.priority) break;
+      this.values[parentIdx] = element;
+      this.values[idx] = parent;
+      idx = parentIdx;
+    }
+  }
+
+  // Dequeue a priority item and return it
+  dequeue() {
+    const min = this.values[0];
+    const end = this.values.pop();
+    if (this.values.length > 0) {
+      this.values[0] = end;
+      this.sinkDown();
+    }
+    return min;
+  }
+
+  // Move priority items to correct position after removing one
+  sinkDown() {
+    let idx = 0;
+    const length = this.values.length;
+    const element = this.values[0];
+    while (true) {
+      let leftChildIdx = 2 * idx + 1;
+      let rightChildIdx = 2 * idx + 2;
+      let leftChild, rightChild;
+      let swap = null;
+
+      if (leftChildIdx < length) {
+        leftChild = this.values[leftChildIdx];
+        if (leftChild.priority < element.priority) {
+          swap = leftChildIdx;
+        }
+      }
+      if (rightChildIdx < length) {
+        rightChild = this.values[rightChildIdx];
+        if (
+          (swap === null && rightChild.priority < element.priority) ||
+          (swap !== null && rightChild.priority < leftChild.priority)
+        ) {
+          swap = rightChildIdx;
+        }
+      }
+      if (swap === null) break;
+      this.values[idx] = this.values[swap];
+      this.values[swap] = element;
+      idx = swap;
+    }
+  }
+}
+
+// A priority node containing the value of the item and its priority
+class PriorityNode {
+  val: string;
+  priority: number;
+
+  // Constructor
+  constructor(val, priority) {
+    this.val = val;
+    this.priority = priority;
+  }
+}
+
 // JS Main
 SearchMap.newSearch();
 populateSearchList();
 
+// Get the current mouse position within the canvas
 function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
   var rect = canvas.getBoundingClientRect();
 
@@ -1237,43 +1212,57 @@ function getMousePos(canvas: HTMLCanvasElement, evt: MouseEvent) {
   };
 }
 
-function clk(e: MouseEvent) {
+// Register mouse actions for handling tooltips
+function register_mouse_action(e: MouseEvent) {
   if (!SearchMap.current.start_search) {
     let pos = getMousePos(canvas, e);
     let p = toPoint(
       Math.floor(pos.x / SearchMap.tile_size),
       Math.floor(pos.y / SearchMap.tile_size)
     );
+
+    // Left-click utilizes tooltip
     if (e.buttons == 1 || e.buttons == 3) {
+      // Only register commands within canvas
       if (SearchMap.withinCanvas(p)) {
-        if (SearchMap.tooltip === Tooltip.BLOCK)
-          SearchMap.current.placeWater(p);
-        if (SearchMap.tooltip === Tooltip.ERASE)
-          SearchMap.current.clearPosition(p);
-        if (SearchMap.tooltip === Tooltip.ROAD) SearchMap.current.placeRoad(p);
-        if (SearchMap.tooltip === Tooltip.FOREST)
-          SearchMap.current.placeForest(p);
-        if (SearchMap.tooltip === Tooltip.START) {
-          SearchMap.current.pt_start = p;
-        }
-        if (SearchMap.tooltip === Tooltip.FINISH) {
-          SearchMap.current.pt_finish = p;
+        switch (SearchMap.tooltip) {
+          case Tooltip.WATER:
+            SearchMap.current.placeWater(p);
+            break;
+          case Tooltip.ERASE:
+            SearchMap.current.clearPosition(p);
+            break;
+          case Tooltip.FOREST:
+            SearchMap.current.placeForest(p);
+            break;
+          case Tooltip.ROAD:
+            SearchMap.current.placeRoad(p);
+            break;
+          case Tooltip.START:
+            SearchMap.current.pt_start = p;
+            break;
+          case Tooltip.FINISH:
+            SearchMap.current.pt_finish = p;
+            break;
+          default:
+            break;
         }
       }
+      // Eraser is bound to right-click
     } else if (e.buttons == 2) {
       SearchMap.current.clearPosition(p);
     }
   }
 }
 
-// Handle setting
+// Handle mouse actions based on moving mouse
 canvas.addEventListener("mousemove", (e) => {
-  clk(e);
+  register_mouse_action(e);
 });
 
-// Handle setting
+// Handle mouse actions based on clicking mouse
 canvas.addEventListener("mousedown", (e) => {
-  clk(e);
+  register_mouse_action(e);
 });
 
 // Prevent context menu if right-clicking canvas
@@ -1282,7 +1271,7 @@ canvas.addEventListener("contextmenu", (e) => {
 });
 
 // Toggle the CSS for the associated button and set the internal variable
-function selectMapBtn(key: string) {
+function selectTTBtn(key: string) {
   for (let btn of Object.values(ttButtons)) {
     btn.classList.remove("selected");
   }
@@ -1291,27 +1280,27 @@ function selectMapBtn(key: string) {
 
 // Tooltip Buttons
 ttStartBtn.addEventListener("click", () => {
-  selectMapBtn("start");
+  selectTTBtn("start");
   SearchMap.tooltip = Tooltip.START;
 });
 ttFinishBtn.addEventListener("click", () => {
-  selectMapBtn("finish");
+  selectTTBtn("finish");
   SearchMap.tooltip = Tooltip.FINISH;
 });
-ttBlockBtn.addEventListener("click", () => {
-  selectMapBtn("water");
-  SearchMap.tooltip = Tooltip.BLOCK;
+ttWaterBtn.addEventListener("click", () => {
+  selectTTBtn("water");
+  SearchMap.tooltip = Tooltip.WATER;
 });
 ttRoadBtn.addEventListener("click", () => {
-  selectMapBtn("road");
+  selectTTBtn("road");
   SearchMap.tooltip = Tooltip.ROAD;
 });
 ttForestBtn.addEventListener("click", () => {
-  selectMapBtn("forest");
+  selectTTBtn("forest");
   SearchMap.tooltip = Tooltip.FOREST;
 });
 ttEraserBtn.addEventListener("click", () => {
-  selectMapBtn("eraser");
+  selectTTBtn("eraser");
   SearchMap.tooltip = Tooltip.ERASE;
 });
 
