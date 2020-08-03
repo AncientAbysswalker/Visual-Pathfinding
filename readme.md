@@ -18,7 +18,7 @@ I decided to implement each search algorithm in a standardized fashion, with a c
 
 ## Tiles and Dynamic Tiling
 
-I originally was working with very simple tiles while developing this program. At some point I decided I wanted to add some more aesthetics into the mix, and started by making the tiles look nicer, and then realized that I wanted the tiles to interact with each-other based on whether they are adjacent to more of the same type of tile - what I have called Dynamic Tiling. I recalled seeing similar functionality in some game creation softwares (Game Maker XP) in the past, and this made me wonder how this might be implemented.
+I originally was working with very simple tiles while developing this program. At some point I decided I wanted to add some more aesthetics into the mix, and started by making the tiles look nicer, and then realized that I wanted the tiles to interact with each-other based on whether they are adjacent to more of the same type of tile - what I have called Dynamic Tiling. I recalled seeing similar functionality in some game creation softwares (RPG Maker XP) in the past, and this made me wonder how this might be implemented.
 
 Looking at any given tile, the tile is potentially adjacent to up to eight (8) more similar tiles; in order to make a tile for each of these states, a total of 256 (2<sup>8</sup>) unique tiles. This is slightly ridiculous and would result in a "large" image (not really but thinking of the memory space involved in older games), which made me think about ways to optimize this slighly. By splitting the tile into quadrants each quadrant can be defined completely by three of the adjacency checks, which can be stored in the object for minimal storage to reduce time complexity at each draw.
 
