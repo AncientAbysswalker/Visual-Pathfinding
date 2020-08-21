@@ -1,5 +1,7 @@
 # Visual Pathfinding
 
+![Example gif](https://raw.githubusercontent.com/AncientAbysswalker/Visual-Pathfinding/master/md/header.gif)
+
 ## Working Demo
 
 A working demo can be found live here:
