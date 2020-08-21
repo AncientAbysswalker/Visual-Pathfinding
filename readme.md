@@ -14,7 +14,7 @@ A simple implementation and graphical representation of standard search algorith
 
 My implementation uses a 2D array of objects (class instances) to track the drawn map. The pathfinding then occurs on top of the map, taking into account the difficulty of the terrain, determining the optimal path based on the search algorithm chosen.
 
-## Search algorithms
+## Search Algorithms
 
 I decided to implement each search algorithm in a standardized fashion, with a common function to call that steps the search forward. This fucntion is called by the master Search class that also is repsonsible for interfacing with the canvas. This allows me to draw the traversal of the map in steps the work visually for humans, instead of just drawing everything instantly. This also makes it very easy to implement more algorithms moving forward, and hook them into the current master class.
 
